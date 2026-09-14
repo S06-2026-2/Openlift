@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{ margin:0; }
+  .frame{
+    width:390px; height:844px; background:#F5F4F1; box-sizing:border-box;
+    font-family:'Patrick Hand','Segoe Print',sans-serif; color:#1a1a1a;
+    display:flex; flex-direction:column;
+  }
+  .topbar{
+    padding:18px 20px 14px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:2px solid #1a1a1a;
+  }
+  .title{ font-size:20px; }
+  .compose{
+    width:32px; height:32px; border-radius:50%; border:2px solid #1a1a1a;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tabs{ display:flex; gap:18px; padding:12px 20px 0; }
+  .tab{ font-size:14px; color:#9a9a95; padding-bottom:8px; }
+  .tab.active{ color:#1a1a1a; font-weight:700; border-bottom:3px solid #1a1a1a; }
+  .content{ flex:1; overflow:hidden; padding:14px 20px 0; display:flex; flex-direction:column; gap:14px; }
+
+  .card{ border:2px solid #1a1a1a; border-radius:8px; background:#fff; padding:14px; }
+  .card-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .avatar-sm{
+    width:30px; height:30px; border-radius:50%; border:2px solid #1a1a1a; background:#F5F4F1;
+    flex:none;
+  }
+  .who{ font-family:'Courier New',monospace; font-size:12px; }
+  .when{ font-size:11px; color:#9a9a95; margin-left:auto; }
+  .card-title{ font-size:16px; margin-bottom:4px; }
+  .card-sub{ font-size:13px; color:#7a7a75; }
+  .card-foot{ display:flex; align-items:center; gap:16px; margin-top:12px; font-size:13px; color:#5a5a55; }
+  .card-foot .chip{
+    margin-left:auto; font-family:'Courier New',monospace; font-size:10px; color:#9a9a95;
+    border:1px solid #d8d6cf; border-radius:20px; padding:2px 8px;
+  }
+  .foot-item{ display:flex; align-items:center; gap:5px; }
+</style>
+</helmet>
+<div class="frame">
+  <div class="topbar">
+    <div class="title">Feed</div>
+    <div class="compose">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active">Todos</div>
+    <div class="tab">Treinos</div>
+    <div class="tab">Artigos</div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div class="card-head">
+        <div class="avatar-sm"></div>
+        <div class="who">npub1x3f…9kd2</div>
+        <div class="when">2h</div>
+      </div>
+      <div class="card-title">Treino de Pernas</div>
+      <div class="card-sub">Volume: 2.480 kg · 5 séries</div>
+      <div class="card-foot">
+        <div class="foot-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+          12
+        </div>
+        <div class="foot-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          3
+        </div>
+        <div class="chip">via NOSTR</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="avatar-sm"></div>
+        <div class="who">npub1qe7…4mzp</div>
+        <div class="when">1d</div>
+      </div>
+      <div class="card-title">Como estruturar a progressão de carga</div>
+      <div class="card-sub">Um guia rápido sobre sobrecarga progressiva e como aplicar…</div>
+      <div class="card-foot">
+        <div class="foot-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+          34
+        </div>
+        <div class="foot-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          8
+        </div>
+        <div class="chip">artigo</div>
+      </div>
+    </div>
+  </div>
+  <dc-import name="BottomNav" active="feed" accent="{{accent}}" hint-size="390,84"></dc-import>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#FF6B00","options":["#FF6B00","#0284C7","#16A34A","#1a1a1a"]}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#FF6B00' };
+  }
+}
+</script>
+</body>
+</html>

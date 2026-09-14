@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "Login.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Login" },
+    { "file": "Main.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "Dashboard" },
+    { "file": "NovoTreino.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "Novo Treino" },
+    { "file": "Feed.dc.html", "x": 1410, "y": 0, "w": 390, "h": 844, "title": "Feed Social" },
+    { "file": "Perfil.dc.html", "x": 1880, "y": 0, "w": 390, "h": 844, "title": "Perfil" },
+    { "file": "BottomNav.dc.html", "x": 470, "y": 970, "w": 390, "h": 84, "title": "Componente: Navegação inferior" }
+  ],
+  "annotations": [
+    { "id": "brief", "x": 0, "y": -130, "w": 640, "text": "OpenLift — Wireframes de baixa fidelidade (Sprint 1)\nCaixas, labels e hierarquia de layout — sem polimento visual. Alinhar o time antes da implementação real a partir do Sprint 2. Rotas do AppRouter: /login, /dashboard, /workouts/new, /social/feed, /profile." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body{ margin:0; }
+  .frame{
+    width:390px; height:844px; background:#F5F4F1; box-sizing:border-box;
+    font-family:'Patrick Hand','Segoe Print',sans-serif; color:#1a1a1a;
+    display:flex; flex-direction:column; padding:64px 28px 40px;
+  }
+  .brand{ text-align:center; margin-bottom:6px; }
+  .brand h1{ font-size:34px; margin:0; letter-spacing:.02em; }
+  .tagline{ text-align:center; color:#7a7a75; font-size:15px; margin-bottom:52px; }
+  .field{ margin-bottom:20px; }
+  .field label{ display:block; font-size:14px; color:#5a5a55; margin-bottom:6px; }
+  .field .box{
+    height:48px; border:2px solid #1a1a1a; border-radius:6px; background:#fff;
+    display:flex; align-items:center; padding:0 14px; font-size:15px; color:#b7b7b0;
+  }
+  .btn-primary{
+    height:52px; border:2px solid #1a1a1a; border-radius:6px; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    margin-top:12px; cursor:pointer;
+  }
+  .link{ text-align:center; margin-top:18px; font-size:15px; text-decoration:underline; text-decoration-style:dashed; }
+  .spacer{ flex:1; }
+  .note{
+    border:2px dashed #b7b7b0; border-radius:8px; padding:14px 16px; display:flex;
+    gap:10px; align-items:flex-start; background:#fff;
+  }
+  .note p{ margin:0; font-size:13px; line-height:1.45; color:#5a5a55; }
+  .note svg{ flex:none; margin-top:2px; }
+</style>
+</helmet>
+<div class="frame">
+  <div class="brand">
+    <h1>OpenLift</h1>
+  </div>
+  <div class="tagline">Registre. Evolua. Compartilhe.</div>
+
+  <div class="field">
+    <label>E-mail</label>
+    <div class="box">voce@exemplo.com</div>
+  </div>
+  <div class="field">
+    <label>Senha</label>
+    <div class="box">••••••••</div>
+  </div>
+
+  <div class="btn-primary" style="background:{{accent}}">Entrar</div>
+  <div class="link">Ainda não tem conta? Criar conta</div>
+
+  <div class="spacer"></div>
+
+  <div class="note">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    <p>Sua identidade NOSTR é criada automaticamente neste dispositivo — você nunca precisa copiar ou guardar nenhuma chave.</p>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#FF6B00","options":["#FF6B00","#0284C7","#16A34A","#1a1a1a"]}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#FF6B00' };
+  }
+}
+</script>
+</body>
+</html>
