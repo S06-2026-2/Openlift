@@ -9,4 +9,5 @@ POST /me/nostr-identity    — registra o npub gerado localmente pelo app
 # TODO(Sprint 2): register(payload: schemas.auth.RegisterRequest) -> schemas.user.UserOut
 # TODO(Sprint 2): login(payload: schemas.auth.LoginRequest) -> schemas.auth.TokenPair
 # TODO(Sprint 4): refresh(payload: schemas.auth.RefreshRequest) -> schemas.auth.TokenPair
-# TODO(Sprint 2): register_nostr_identity(payload: schemas.auth.NostrIdentityIn, user=Depends(get_current_user))
+# TODO(Sprint 2): register_nostr_identity(payload: schemas.auth.NostrIdentityIn,
+#   user=Depends(get_current_user))
