@@ -5,20 +5,32 @@
 // (SecureStorageService, ApiClient) antes do runApp, se necessário.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 void main() {
-  // TODO(Sprint 1): envolver com ProviderScope (flutter_riverpod).
-  // TODO(Sprint 1): runApp(OpenLiftApp()).
-  runApp(const _PlaceholderApp());
+  runApp(
+    const ProviderScope(
+      child: OpenLiftApp(),
+    ),
+  );
 }
 
-/// Placeholder até o AppRouter (core/router/app_router.dart) ser implementado.
-class _PlaceholderApp extends StatelessWidget {
-  const _PlaceholderApp();
+/// Aplicação principal do OpenLift com roteamento declarativo e design system.
+class OpenLiftApp extends StatelessWidget {
+  const OpenLiftApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // TODO(Sprint 1): substituir por MaterialApp.router(routerConfig: appRouter).
-    throw UnimplementedError('OpenLiftApp ainda não implementado.');
+    return MaterialApp.router(
+      title: 'OpenLift',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
+      routerConfig: appRouter,
+    );
   }
 }
