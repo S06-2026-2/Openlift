@@ -19,6 +19,10 @@ OpenLift/
 
 O roadmap completo de 12 semanas, dividido em 6 sprints (Frontend, Backend, DevOps e o plano de testes assistidos por IA), está em [`implementation.md`](implementation.md).
 
+## Wireframes
+
+Wireframes de baixa fidelidade das 5 telas núcleo (Login, Dashboard, Novo Treino, Feed Social, Perfil): [ver/editar no canvas](https://claude.ai/code/artifact/c7884706-27b6-4ee2-894c-95cf89851ffe) · fonte em [`design/wireframes/sprint-1/`](design/wireframes/sprint-1/).
+
 ## Rodando localmente
 
 ```bash
