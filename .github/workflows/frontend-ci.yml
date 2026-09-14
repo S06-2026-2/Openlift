@@ -1,0 +1,10 @@
+# Sprint 1 — job `analyze` (flutter analyze / dart format --set-exit-if-changed) em todo PR que toca app/.
+# Sprint 2 — job `test` (flutter test) com widget tests e testes de controller.
+#
+# name: frontend-ci
+# on: [pull_request]
+# jobs:
+#   analyze:
+#     TODO(Sprint 1): flutter analyze
+#   test:
+#     TODO(Sprint 2): flutter test --coverage

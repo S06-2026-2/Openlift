@@ -1,0 +1,32 @@
+name: openlift
+description: >
+  OpenLift — registro de treinos, dashboards e compartilhamento social via NOSTR.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Estado e navegação (Sprint 1)
+  flutter_riverpod: ^2.5.0
+  go_router: ^14.0.0
+  # Rede (Sprint 2)
+  dio: ^5.4.0
+  # Custódia local de chaves/sessão (Sprint 2)
+  flutter_secure_storage: ^9.0.0
+  # Protocolo NOSTR: geração de chaves, assinatura e relays (Sprint 2-4)
+  # dart_nostr: ^9.0.0   # TODO: destravar versão após spike de compatibilidade
+  # Gráficos e heatmap (Sprint 3/5)
+  fl_chart: ^0.68.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.3
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

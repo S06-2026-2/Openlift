@@ -1,0 +1,11 @@
+# Sprint 3 — deploy contínuo da API para staging a cada merge em main.
+# Sprint 6 — passa a exigir backend-ci e frontend-ci verdes antes de rodar (branch protection).
+#
+# name: cd-staging
+# on:
+#   push:
+#     branches: [main]
+# jobs:
+#   deploy-api:
+#     TODO(Sprint 3): build da imagem (infra/docker/Dockerfile.api) e push para o registry
+#     TODO(Sprint 3): deploy no serviço gerenciado (Railway/Render/Fly.io)

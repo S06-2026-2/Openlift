@@ -1,0 +1,6 @@
+# Sprint 1 — Imagem da API FastAPI.
+#
+# TODO(Sprint 1): FROM python:3.12-slim
+# TODO(Sprint 1): copiar api/requirements.txt, pip install --no-cache-dir
+# TODO(Sprint 1): copiar api/ para /app, CMD uvicorn app.main:app --host 0.0.0.0
+# TODO(Sprint 6): build multi-stage para reduzir tamanho da imagem final

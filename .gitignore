@@ -1,0 +1,38 @@
+# ---- Flutter / Dart ----
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/build/
+app/ios/Pods/
+app/ios/.symlinks/
+app/android/.gradle/
+app/**/*.iml
+app/.idea/
+
+# ---- Python / FastAPI ----
+api/.venv/
+api/__pycache__/
+api/**/__pycache__/
+api/*.egg-info/
+api/.pytest_cache/
+api/.mypy_cache/
+api/.ruff_cache/
+api/htmlcov/
+api/.coverage
+
+# ---- Env & secrets ----
+.env
+*.env.local
+api/.env
+
+# ---- Infra ----
+infra/docker/volumes/
+
+# ---- Editors / OS ----
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- Ignored scratch file (not part of the project) ----
+teste.txt

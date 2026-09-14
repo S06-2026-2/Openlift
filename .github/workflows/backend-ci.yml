@@ -1,0 +1,11 @@
+# Sprint 1 — job `lint` (ruff/black) em todo PR que toca api/.
+# Sprint 2 — job `test` com Postgres de serviço + pytest-cov.
+# Sprint 4 — gate de cobertura passa a ser bloqueante (ver implementation.md).
+#
+# name: backend-ci
+# on: [pull_request]
+# jobs:
+#   lint:
+#     TODO(Sprint 1): ruff check . && black --check .
+#   test:
+#     TODO(Sprint 2): services.postgres (imagem postgres:16) + pytest --cov=app --cov-fail-under=<meta do sprint>
