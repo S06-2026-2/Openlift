@@ -1,7 +1,19 @@
 // Sprint 1 — Smoke test inicial (app sobe sem quebrar).
-//
-// TODO(Sprint 1): substituir pelo teste real assim que OpenLiftApp existir.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openlift/main.dart';
 
 void main() {
-  // TODO(Sprint 1): testWidgets('app inicia sem erros', ...).
+  testWidgets('app inicia sem erros', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: OpenLiftApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Rota: /dashboard'), findsOneWidget);
+  });
 }
