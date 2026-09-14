@@ -5,5 +5,27 @@ Sprint 2: JWT_SECRET, JWT_EXPIRATION_MINUTES.
 Sprint 4: NOSTR_RELAYS (lista configurável, sem hardcode), REDIS_URL.
 """
 
-# TODO(Sprint 1): class Settings(BaseSettings) com os campos acima.
-# TODO(Sprint 1): get_settings() cacheado (lru_cache).
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Sprint 1
+    database_url: str
+    env: str = "development"
+
+    # Sprint 2
+    jwt_secret: str = "change-me"
+    jwt_expiration_minutes: int = 30
+
+    # Sprint 4-5 — opcionais até os workers existirem
+    redis_url: str | None = None
+    nostr_relays: str | None = None
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
