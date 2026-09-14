@@ -1,14 +1,51 @@
-# Orquestração local: API + banco de dados (Sprint 1), Redis + worker (Sprint 4).
-#
-# TODO(Sprint 1): service `db`      — postgres:16, volume nomeado, healthcheck
-# TODO(Sprint 1): service `adminer` — inspeção visual do Postgres em dev
-# TODO(Sprint 1): service `api`     — build: ../../api, Dockerfile.api, depende de `db`
-# TODO(Sprint 4): service `redis`   — cache e fila do worker de sincronização NOSTR
-# TODO(Sprint 4): service `worker`  — mesma imagem da API, comando roda nostr_sync_worker
-#
-# services:
-#   db: ...
-#   adminer: ...
-#   api: ...
-#   redis: ...
-#   worker: ...
+# Orquestração local: API + banco de dados (Sprint 1).
+# Redis + worker (Sprint 4) entram aqui quando o compartilhamento NOSTR existir.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openlift
+      POSTGRES_PASSWORD: openlift
+      POSTGRES_DB: openlift
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openlift"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://openlift:openlift@db:5432/openlift
+      ENV: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../api:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+
+# TODO(Sprint 4): service `redis`  — cache e fila do worker de sincronização NOSTR
+# TODO(Sprint 4): service `worker` — mesma imagem da API, comando roda nostr_sync_worker
+
+volumes:
+  db_data:
