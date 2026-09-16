@@ -29,17 +29,36 @@ jobs:
           prompt: |
             You are the CI reporting agent for the OpenLift project.
 
-            Read the repository instructions located at:
+            Read and follow the agent instructions located at:
             .github/agents/ci-reporter.agent.md
 
-            Also read and follow the CI reporting skill located at:
+            Read and follow the CI reporting skill located at:
             .github/skills/ci-report/SKILL.md
 
-            For this initial test, verify that you can access these files.
+            Generate the OpenLift CI report.
 
-            Do not modify any source code.
+            For this execution, CI test results have not yet been provided.
+            You must clearly identify unavailable information instead of
+            inventing results.
 
-            Respond with a short summary explaining:
-            - whether the agent instructions were found
-            - whether the CI report skill was found
-            - what the purpose of this agent is
+            Write the final report to:
+
+            CI_REPORT.md
+
+            Do not modify any application source code.
+
+      - name: Verify generated report
+        run: |
+          if [ ! -f CI_REPORT.md ]; then
+            echo "CI_REPORT.md was not generated."
+            exit 1
+          fi
+
+          echo "CI_REPORT.md generated successfully."
+          cat CI_REPORT.md
+
+      - name: Upload CI report
+        uses: actions/upload-artifact@v4
+        with:
+          name: openlift-ci-report
+          path: CI_REPORT.md
