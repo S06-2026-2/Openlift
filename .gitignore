@@ -38,3 +38,7 @@ Thumbs.db
 
 # ---- Ignored scratch file (not part of the project) ----
 teste.txt
+
+# ---- Test reports / coverage ----
+api/reports/
+app/coverage/

@@ -1,10 +1,61 @@
-# Sprint 1 — job `analyze` (flutter analyze / dart format --set-exit-if-changed) em todo PR que toca app/.
-# Sprint 2 — job `test` (flutter test) com widget tests e testes de controller.
-#
-# name: frontend-ci
-# on: [pull_request]
-# jobs:
-#   analyze:
-#     TODO(Sprint 1): flutter analyze
-#   test:
-#     TODO(Sprint 2): flutter test --coverage
+name: Frontend CI
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/frontend-ci.yml"
+
+jobs:
+    analyze:
+        name: Flutter Analyze
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: app
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                  channel: stable
+                  cache: true
+
+            - name: Install dependencies
+              run: flutter pub get
+
+            - name: Analyze
+              run: flutter analyze
+
+    test:
+        name: Flutter Test
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: app
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                  channel: stable
+                  cache: true
+
+            - name: Install dependencies
+              run: flutter pub get
+
+            - name: Run tests
+              run: flutter test --coverage
+
+            - name: Upload coverage report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: frontend-test-report
+                  path: app/coverage/
+                  if-no-files-found: warn

@@ -29,17 +29,17 @@ class AppTheme {
 
   /// Tema claro do aplicativo.
   static ThemeData light() {
-    final colorScheme = ColorScheme.light(
+    const colorScheme = ColorScheme.light(
       primary: primaryColor,
       onPrimary: Colors.white,
       primaryContainer: primaryContainerLight,
-      onPrimaryContainer: const Color(0xFF5C2400),
+      onPrimaryContainer: Color(0xFF5C2400),
       secondary: secondaryColor,
       onSecondary: Colors.white,
       error: dangerColor,
       onError: Colors.white,
       surface: lightSurface,
-      onSurface: const Color(0xFF0F172A),
+      onSurface: Color(0xFF0F172A),
       surfaceContainerHighest: lightSurfaceVariant,
       outline: lightBorder,
     );
@@ -108,17 +108,17 @@ class AppTheme {
 
   /// Tema escuro do aplicativo (tema de primeira classe para ambiente fitness).
   static ThemeData dark() {
-    final colorScheme = ColorScheme.dark(
+    const colorScheme = ColorScheme.dark(
       primary: primaryColor,
       onPrimary: Colors.white,
       primaryContainer: primaryContainerDark,
-      onPrimaryContainer: const Color(0xFFFFD7BF),
+      onPrimaryContainer: Color(0xFFFFD7BF),
       secondary: secondaryColor,
       onSecondary: Colors.white,
       error: dangerColor,
       onError: Colors.white,
       surface: darkSurface,
-      onSurface: const Color(0xFFF8FAFC),
+      onSurface: Color(0xFFF8FAFC),
       surfaceContainerHighest: darkSurfaceVariant,
       outline: darkBorder,
     );
