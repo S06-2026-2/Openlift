@@ -1,27 +1,28 @@
 name: CI Report Agent
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
-    contents: read
-    copilot-requests: write
-    
+  contents: read
+  copilot-requests: write
+
 jobs:
-    report:
-        name: AI CI Report
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+  report:
+    name: AI CI Report
+    runs-on: ubuntu-latest
 
-            - name: Install Copilot CLI
-              run: npm install -g @githubnext/copilot-cli
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Run CI Reporter Agent
-              env:
-                GITHUB_TOKEN: ${{ github.token }}
-              run: |
-                  copilot \ 
-                    --agent=ci-reporter \
-                    --prompt "Generate an OpenLift CI report using the available CI information."
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Run CI Reporter Agent
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          copilot \
+            --agent=ci-reporter \
+            --prompt "Generate an OpenLift CI report using the available CI information."
