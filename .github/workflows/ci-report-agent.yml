@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  copilot-requests: write
 
 jobs:
   report:
@@ -20,13 +19,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
+      - name: Run Gemini CI Reporter
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@v0
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            You are the CI reporting agent for the OpenLift project.
 
-      - name: Run CI Reporter Agent
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          copilot \
-            --agent=ci-reporter \
-            --prompt "Generate an OpenLift CI report using the available CI information."
+            Read the repository instructions located at:
+            .github/agents/ci-reporter.agent.md
+
+            Also read and follow the CI reporting skill located at:
+            .github/skills/ci-report/SKILL.md
+
+            For this initial test, verify that you can access these files.
+
+            Do not modify any source code.
+
+            Respond with a short summary explaining:
+            - whether the agent instructions were found
+            - whether the CI report skill was found
+            - what the purpose of this agent is
