@@ -1,6 +1,10 @@
 name: CI Report Agent
 
 on:
+  push:
+    branches:
+      - workflow/agent-skill
+
   workflow_dispatch:
 
 permissions:
