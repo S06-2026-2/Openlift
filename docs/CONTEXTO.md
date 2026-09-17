@@ -85,7 +85,7 @@ OpenLift/
 |---|---|---|
 | Backend | **fechado** | FastAPI em camadas; 4 tabelas migradas de verdade no Postgres (`users`, `nostr_identities`, `workouts`, `sets`); `/health` e `/version` funcionando; schemas de auth e treino rascunhados; lint limpo |
 | Frontend | **fechado** | `AppTheme` (Material 3, claro/escuro); `AppRouter` com 7 rotas navegáveis (placeholder); `main.dart`; widgets compartilhados; 8 testes passando; scaffolding nativo de todas as plataformas; testado no Chrome; wireframes de baixa fidelidade das 5 telas núcleo publicados |
-| DevOps | **~50%** | Docker (Postgres + API + Adminer) funcionando ponta a ponta; repositório e convenções prontos. Falta CI/qualidade — ver §8 |
+| DevOps | **~50%** | Docker (Postgres + API + Adminer) funcionando ponta a ponta; repositório e convenções prontos; CI de lint/análise/testes já configurada. Faltam deploy de staging, branch protection, gitleaks e commitlint — ver §8 |
 | Agente de IA | **iniciado, não fechado** | PR #2 (`workflow/agent-skill`) em aberto: agente de relatório de implementações via GitHub Actions com Gemini. Falta merge e falta a skill de geração de testes |
 
 **Bug conhecido (ambiente, não código):** em pasta de projeto com acento no caminho, `flutter analyze` quebra. `flutter test` e `flutter run` funcionam normalmente, e o CI não tem esse problema.
