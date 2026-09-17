@@ -13,7 +13,7 @@ Fixtures disponíveis:
 import os
 import sys
 from collections.abc import Generator
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Garante que a raiz do backend (onde fica a pasta app) está no sys.path
@@ -35,10 +35,10 @@ from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import Base, get_db  # noqa: E402
+
 # Importa todos os models para que Base.metadata conheça as tabelas.
 from app.domain import models as _models  # noqa: F401, E402
 from app.main import app  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Banco de teste (SQLite in-memory)
@@ -124,7 +124,7 @@ def auth_headers(db_session: Session) -> dict[str, str]:
     settings = get_settings()
     payload = {
         "sub": str(test_user.id),
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expiration_minutes),
+        "exp": datetime.now(UTC) + timedelta(minutes=settings.jwt_expiration_minutes),
     }
     token = pyjwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
