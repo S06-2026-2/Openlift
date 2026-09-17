@@ -19,7 +19,6 @@ from app.domain.models.set import WorkoutSet
 from app.domain.models.user import User
 from app.domain.models.workout import Workout
 
-
 # ---------------------------------------------------------------------------
 # Model: User
 # ---------------------------------------------------------------------------
@@ -213,14 +212,16 @@ def test_nostr_identity_duplicate_npub_raises_integrity_error(db_session: Sessio
 
 
 def test_nostr_identity_unique_user_id_raises_integrity_error(db_session: Session) -> None:
-    """Tentativa de registrar mais de uma identidade NOSTR para o mesmo usuário deve falhar (1:1)."""
+    """Tentativa de registrar mais de uma identidade NOSTR para o mesmo usuário falha (1:1)."""
     # Arrange
     user = User(email="single_identity@openlift.dev", hashed_password="hash")
     db_session.add(user)
     db_session.commit()
 
-    id1 = NostrIdentity(user_id=user.id, npub="npub1first000000000000000000000000000000000000000000000000000")
-    id2 = NostrIdentity(user_id=user.id, npub="npub1second00000000000000000000000000000000000000000000000000")
+    npub1 = "npub1first000000000000000000000000000000000000000000000000000"
+    npub2 = "npub1second00000000000000000000000000000000000000000000000000"
+    id1 = NostrIdentity(user_id=user.id, npub=npub1)
+    id2 = NostrIdentity(user_id=user.id, npub=npub2)
 
     # Act & Assert
     db_session.add(id1)

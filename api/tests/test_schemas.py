@@ -6,7 +6,7 @@ Cobre as regras de negócio e validações declaradas nos contratos de dados:
 - User: projeção pública de usuário (UserOut)
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
@@ -15,7 +15,6 @@ from pydantic import ValidationError
 from app.domain.schemas.auth import LoginRequest, NostrIdentityIn, RegisterRequest, TokenPair
 from app.domain.schemas.user import UserOut
 from app.domain.schemas.workout import SetIn, SetOut, WorkoutIn, WorkoutOut
-
 
 # ---------------------------------------------------------------------------
 # Schemas: Auth
@@ -156,14 +155,12 @@ def test_workout_in_with_nested_sets() -> None:
 
 def test_workout_out_serialization() -> None:
     """WorkoutOut deve serializar corretamente os atributos de resposta."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     workout_out = WorkoutOut(
         id=1,
         date=date(2026, 9, 17),
         created_at=now,
-        sets=[
-            SetOut(id=10, exercise_id=1, reps=10, weight_kg=Decimal("70.0"), rpe=Decimal("8.0"))
-        ],
+        sets=[SetOut(id=10, exercise_id=1, reps=10, weight_kg=Decimal("70.0"), rpe=Decimal("8.0"))],
         shared_event_id=None,
     )
 
@@ -180,7 +177,7 @@ def test_workout_out_serialization() -> None:
 
 def test_user_out_serialization() -> None:
     """UserOut deve expor id, email, created_at e npub sem expor senha."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     user_out = UserOut(
         id=42,
         email="public_user@openlift.dev",
