@@ -4,6 +4,8 @@ App de treino que registra histórico de exercícios, mostra dashboards e mapa d
 
 Projeto acadêmico da disciplina de Produto de Software.
 
+**Contexto completo do projeto** (decisões, requisitos, calendário, riscos, pendências): [`docs/CONTEXTO.md`](docs/CONTEXTO.md).
+
 ## Estrutura do repositório
 
 ```
