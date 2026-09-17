@@ -7,19 +7,22 @@ Cobre:
 
 from collections.abc import Generator
 
+import pytest
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.database import Base, get_db
-
 
 # ---------------------------------------------------------------------------
 # Config / Settings
 # ---------------------------------------------------------------------------
 
 
-def test_settings_default_values() -> None:
+def test_settings_default_values(monkeypatch: pytest.MonkeyPatch) -> None:
     """Settings deve carregar valores padrão corretos para variáveis opcionais."""
+    # Garante que ENV não venha herdado do ambiente de teste para testar o default do modelo
+    monkeypatch.delenv("ENV", raising=False)
+
     # Arrange & Act
     settings = Settings(database_url="sqlite:///:memory:")
 
