@@ -11,8 +11,15 @@ Fixtures disponíveis:
 """
 
 import os
+import sys
 from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# Garante que a raiz do backend (onde fica a pasta app) está no sys.path
+api_root = str(Path(__file__).resolve().parent.parent)
+if api_root not in sys.path:
+    sys.path.insert(0, api_root)
 
 # Garante que o DATABASE_URL aponta para SQLite de teste ANTES de qualquer
 # import da aplicação (evita que o engine de produção tente conectar ao Postgres).
