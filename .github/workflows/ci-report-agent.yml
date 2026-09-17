@@ -1,26 +1,126 @@
 name: CI Report Agent
 
 on:
-  push:
-    branches:
-      - workflow/agent-skill
+  workflow_run:
+    workflows:
+      - Backend CI
+      - Frontend CI
+    types:
+      - completed
 
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  report:
-    name: AI CI Report
+  collect:
+    name: Collect CI Results
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Find Backend and Frontend runs
+        id: runs
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "Looking for CI runs for commit:"
+          echo "$HEAD_SHA"
+
+          BACKEND_RUN=$(gh run list \
+            --workflow backend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --json databaseId,status \
+            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+
+          FRONTEND_RUN=$(gh run list \
+            --workflow frontend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --json databaseId,status \
+            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+
+          echo "Backend run: $BACKEND_RUN"
+          echo "Frontend run: $FRONTEND_RUN"
+
+          echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
+          echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$BACKEND_RUN" ] && [ -n "$FRONTEND_RUN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: CI results not ready
+        if: |
+          github.event_name == 'workflow_run' &&
+          steps.runs.outputs.ready != 'true'
+        run: |
+          echo "Backend CI and Frontend CI have not both completed yet."
+          echo "The reporter will run again when the other workflow completes."
+
+      - name: Create input directories
+        if: steps.runs.outputs.ready == 'true'
+        run: |
+          mkdir -p ci-input/backend
+          mkdir -p ci-input/frontend
+
+      - name: Download Backend artifacts
+        if: steps.runs.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKEND_RUN: ${{ steps.runs.outputs.backend_run }}
+        run: |
+          gh run download "$BACKEND_RUN" \
+            --dir ci-input/backend
+
+      - name: Download Frontend artifacts
+        if: steps.runs.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FRONTEND_RUN: ${{ steps.runs.outputs.frontend_run }}
+        run: |
+          gh run download "$FRONTEND_RUN" \
+            --dir ci-input/frontend
+
+      - name: Show collected CI artifacts
+        if: steps.runs.outputs.ready == 'true'
+        run: |
+          echo "================================"
+          echo "Backend artifacts"
+          echo "================================"
+          find ci-input/backend -type f -print || true
+
+          echo ""
+          echo "================================"
+          echo "Frontend artifacts"
+          echo "================================"
+          find ci-input/frontend -type f -print || true
+
+      - name: Create CI metadata
+        if: steps.runs.outputs.ready == 'true'
+        run: |
+          cat > ci-input/metadata.txt <<EOF
+          Commit: ${{ github.event.workflow_run.head_sha }}
+          Branch: ${{ github.event.workflow_run.head_branch }}
+
+          Backend Run ID:
+          ${{ steps.runs.outputs.backend_run }}
+
+          Frontend Run ID:
+          ${{ steps.runs.outputs.frontend_run }}
+          EOF
+
       - name: Run Gemini CI Reporter
+        if: steps.runs.outputs.ready == 'true'
         id: gemini
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GEMINI_CLI_TRUST_WORKSPACE: "true"
@@ -29,25 +129,38 @@ jobs:
           prompt: |
             You are the CI reporting agent for the OpenLift project.
 
-            Read and follow the agent instructions located at:
+            Read and follow the agent instructions:
             .github/agents/ci-reporter.agent.md
 
-            Read and follow the CI reporting skill located at:
+            Read and follow the CI report skill:
             .github/skills/ci-report/SKILL.md
 
-            Generate the OpenLift CI report.
+            Results from both CI pipelines are available in:
 
-            For this execution, CI test results have not yet been provided.
-            You must clearly identify unavailable information instead of
-            inventing results.
+            ci-input/backend/
+            ci-input/frontend/
+
+            Pipeline metadata is available in:
+
+            ci-input/metadata.txt
+
+            Analyze all available CI artifacts from both pipelines.
+
+            Never invent unavailable results.
+
+            Generate a consolidated report containing both Backend
+            and Frontend CI results.
 
             Write the final report to:
 
             CI_REPORT.md
 
-            Do not modify any application source code.
+            Do not modify application source code.
 
       - name: Verify generated report
+        if: |
+          steps.runs.outputs.ready == 'true' &&
+          steps.gemini.outcome == 'success'
         run: |
           if [ ! -f CI_REPORT.md ]; then
             echo "CI_REPORT.md was not generated."
@@ -57,9 +170,15 @@ jobs:
           echo "CI_REPORT.md generated successfully."
 
       - name: Publish report to job summary
+        if: |
+          steps.runs.outputs.ready == 'true' &&
+          steps.gemini.outcome == 'success'
         run: cat CI_REPORT.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CI report
+        if: |
+          steps.runs.outputs.ready == 'true' &&
+          steps.gemini.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: openlift-ci-report
