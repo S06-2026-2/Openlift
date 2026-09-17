@@ -13,7 +13,10 @@ app/web/
 app/.metadata
 
 # ---- Python / FastAPI ----
+.venv/
 api/.venv/
+venv/
+api/venv/
 api/__pycache__/
 api/**/__pycache__/
 api/*.egg-info/

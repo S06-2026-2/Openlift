@@ -1,61 +1,77 @@
 name: Frontend CI
+
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - "app/**"
-      - ".github/workflows/frontend-ci.yml"
 
 jobs:
-    analyze:
-        name: Flutter Analyze
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: app
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+  analyze:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
 
-            - name: Set up Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  channel: stable
-                  cache: true
+    defaults:
+      run:
+        working-directory: app
 
-            - name: Install dependencies
-              run: flutter pub get
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Analyze
-              run: flutter analyze
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-    test:
-        name: Flutter Test
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: app
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+      - name: Install dependencies
+        run: flutter pub get
 
-            - name: Set up Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  channel: stable
-                  cache: true
+      - name: Analyze
+        run: flutter analyze
 
-            - name: Install dependencies
-              run: flutter pub get
+      - name: Save analyze results
+        if: always()
+        run: |
+          mkdir -p reports
+          echo "Flutter Analyze was executed." > reports/analyze-result.txt
 
-            - name: Run tests
-              run: flutter test --coverage
+      - name: Upload analyze results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-analysis-results
+          path: app/reports/analyze-result.txt
+          if-no-files-found: warn
 
-            - name: Upload coverage report
-              if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: frontend-test-report
-                  path: app/coverage/
-                  if-no-files-found: warn
+  test:
+    name: Flutter Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: app/coverage/
+          if-no-files-found: warn

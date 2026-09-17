@@ -20,6 +20,7 @@ disallow_untyped_defs = false  # TODO: apertar para true a partir do Sprint 4
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]
