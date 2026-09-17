@@ -16,7 +16,7 @@ Posicionamento de uma frase, para a defesa:
 
 > OpenLift é um app de treino sobre protocolo aberto: o histórico do usuário é dele, publicável e legível por qualquer cliente compatível, e não propriedade da plataforma.
 
-**Fonte de verdade do escopo:** `openlift-ideacao_inicial.txt` (Drive, pasta `inatel/S06-Openlift Files`). Qualquer coisa que não derive dele é proposta, não requisito.
+**Fonte histórica do escopo:** `openlift-ideacao_inicial.txt` (Drive, pasta `inatel/S06-Openlift Files`). A versão vigente para o time e os agentes é este arquivo; divergências devem ser resolvidas aqui primeiro.
 
 ---
 
