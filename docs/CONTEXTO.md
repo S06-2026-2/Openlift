@@ -280,7 +280,7 @@ Dois itens desse conjunto são conteúdo original e não podem ser gerados por a
 ### Agente de IA
 
 1. Fechar o PR #2 (agente de relatório de implementações)
-2. `api/tests/conftest.py` — fixtures `db_session` (banco de teste isolado, criando as tabelas de `Base.metadata` antes de cada teste) e `client` (`TestClient` do FastAPI com `get_db` sobrescrito)
+2. `api/tests/conftest.py` — fixtures `db_session`, `client` e `auth_headers` já existem; ampliar apenas quando novos cenários exigirem
 3. Skills em `/.agent/skills/`: `gerar-teste-pytest.md`, `gerar-teste-flutter.md`, `validar-evento-nostr.md`, `revisar-pr.md`, `criar-endpoint-fastapi.md`, `escrever-adr.md`
 4. `AGENTS.md` na raiz com arquitetura, convenções e as regras invioláveis — é o que faz a IA gerar código no padrão do projeto em vez de código genérico
 5. MCP locais, custo zero: Postgres (o agente consulta o schema real em vez de inventar coluna), filesystem, GitHub
