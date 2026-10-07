@@ -8,8 +8,6 @@ on:
     types:
       - completed
 
-  workflow_dispatch:
-
 permissions:
   contents: read
   actions: read
@@ -20,6 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------------------------------------------------------
+      # Find Backend and Frontend CI executions for the same SHA
+      # ---------------------------------------------------------
+
       - name: Find Backend and Frontend runs
         id: runs
         env:
@@ -40,25 +42,53 @@ jobs:
               --json databaseId,status,conclusion \
               --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
 
-            echo "Backend Run: $BACKEND_RUN"
-            echo "Frontend Run: $FRONTEND_RUN"
+            BACKEND_CONCLUSION=$(gh run list \
+              --workflow backend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-            echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
-            echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
+            FRONTEND_CONCLUSION=$(gh run list \
+              --workflow frontend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
+
+            echo "Backend Run: $BACKEND_RUN"
+            echo "Backend Conclusion: $BACKEND_CONCLUSION"
+
+            echo "Frontend Run: $FRONTEND_RUN"
+            echo "Frontend Conclusion: $FRONTEND_CONCLUSION"
+
+              echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
+              echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
+
+            echo "backend_conclusion=$BACKEND_CONCLUSION" >> "$GITHUB_OUTPUT"
+            echo "frontend_conclusion=$FRONTEND_CONCLUSION" >> "$GITHUB_OUTPUT"
 
             if [ -n "$BACKEND_RUN" ] && [ -n "$FRONTEND_RUN" ]; then
               echo "ready=true" >> "$GITHUB_OUTPUT"
               echo "Both CI workflows are completed."
             else
               echo "ready=false" >> "$GITHUB_OUTPUT"
-              echo "Waiting for both CI workflows."
+              echo "Both CI workflows have not completed yet."
             fi
 
-      - name: Stop if CI results are not ready
+      # ---------------------------------------------------------
+      # If only one CI has completed, this Reporter stops here.
+      # workflow_run will trigger the Reporter again when the
+      # other CI workflow completes.
+      # ---------------------------------------------------------
+
+      - name: CI results not ready
         if: steps.runs.outputs.ready != 'true'
         run: |
-          echo "One or both CI workflows are not completed yet."
-          echo "The reporter will be triggered again when the other workflow completes."
+          echo "Backend CI and Frontend CI have not both completed yet."
+          echo "The Reporter will run again when the other workflow completes."
+
+      # ---------------------------------------------------------
+      # Prepare directories
+      # ---------------------------------------------------------
 
       - name: Create input directories
         if: steps.runs.outputs.ready == 'true'
@@ -66,44 +96,67 @@ jobs:
           mkdir -p ci-input/backend
           mkdir -p ci-input/frontend
 
-      - name: Download Backend CI artifacts
+      # ---------------------------------------------------------
+      # Download Backend artifacts
+      # ---------------------------------------------------------
+
+      - name: Download Backend artifacts
         if: steps.runs.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           BACKEND_RUN: ${{ steps.runs.outputs.backend_run }}
         run: |
-          echo "Downloading Backend artifacts from run ${BACKEND_RUN}"
-          gh run download "$BACKEND_RUN" \ 
-            --dir ci-input/backend 
+          echo "Downloading Backend artifacts from run:"
+          echo "$BACKEND_RUN"
 
-      - name: Download Frontend CI artifacts
+          gh run download "$BACKEND_RUN" \
+            --dir ci-input/backend
+
+      # ---------------------------------------------------------
+      # Download Frontend artifacts
+      # ---------------------------------------------------------
+
+      - name: Download Frontend artifacts
         if: steps.runs.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FRONTEND_RUN: ${{ steps.runs.outputs.frontend_run }}
         run: |
-          echo "Downloading Frontend artifacts from run ${FRONTEND_RUN}"
+          echo "Downloading Frontend artifacts from run:"
+          echo "$FRONTEND_RUN"
+
           gh run download "$FRONTEND_RUN" \
             --dir ci-input/frontend
-      
-      - name: Show collected artifacts
+
+      # ---------------------------------------------------------
+      # Display downloaded files
+      # ---------------------------------------------------------
+
+      - name: Show collected CI artifacts
         if: steps.runs.outputs.ready == 'true'
         run: |
-          echo "==================================="
+          echo "========================================"
           echo "BACKEND ARTIFACTS"
-          echo "==================================="
+          echo "========================================"
 
           find ci-input/backend -type f -print
 
-          echo "==================================="
+          echo ""
+          echo "========================================"
           echo "FRONTEND ARTIFACTS"
-          echo "==================================="
-          
+          echo "========================================"
+
           find ci-input/frontend -type f -print
+
+      # ---------------------------------------------------------
+      # Verify expected artifacts
+      # ---------------------------------------------------------
 
       - name: Verify Backend artifacts
         if: steps.runs.outputs.ready == 'true'
         run: |
+          echo "Checking Backend artifacts..."
+
           test -d ci-input/backend/backend-lint-results
           test -d ci-input/backend/backend-test-results
 
@@ -112,10 +165,17 @@ jobs:
       - name: Verify Frontend artifacts
         if: steps.runs.outputs.ready == 'true'
         run: |
+          echo "Checking Frontend artifacts..."
+
           test -d ci-input/frontend/frontend-analysis-results
           test -d ci-input/frontend/frontend-test-results
 
           echo "Frontend artifacts verified."
+
+      # ---------------------------------------------------------
+      # Store information about the CI executions.
+      # Later this file will also be consumed by the AI agent.
+      # ---------------------------------------------------------
 
       - name: Create CI metadata
         if: steps.runs.outputs.ready == 'true'
@@ -123,20 +183,42 @@ jobs:
           mkdir -p ci-input
           cat > ci-input/metadata.txt <<EOF
           OpenLift CI Results
+          ===================
 
-          Commit: ${{ github.event.workflow_run.head_sha }}
-          Branch: ${{ github.event.workflow_run.head_branch }}
+          Commit:
+          ${{ github.event.workflow_run.head_sha }}
+
+          Branch:
+          ${{ github.event.workflow_run.head_branch }}
 
           Backend Run ID:
           ${{ steps.runs.outputs.backend_run }}
-          
+
+          Backend Conclusion:
+          ${{ steps.runs.outputs.backend_conclusion }}
+
           Frontend Run ID:
           ${{ steps.runs.outputs.frontend_run }}
+
+          Frontend Conclusion:
+          ${{ steps.runs.outputs.frontend_conclusion }}
           EOF
 
       - name: Show CI metadata
         if: steps.runs.outputs.ready == 'true'
-        run: cat ci-input/metadata.txt
+        run: |
+          echo "========================================"
+          echo "CI METADATA"
+          echo "========================================"
+
+          cat ci-input/metadata.txt
+
+      # ---------------------------------------------------------
+      # Temporary artifact used to validate the integration.
+      #
+      # Later this same directory will be provided to the
+      # CI Reporter AI agent.
+      # ---------------------------------------------------------
 
       - name: Upload collected CI results
         if: steps.runs.outputs.ready == 'true'
@@ -144,5 +226,4 @@ jobs:
         with:
           name: collected-ci-results
           path: ci-input/
-
-      
+          if-no-files-found: error
