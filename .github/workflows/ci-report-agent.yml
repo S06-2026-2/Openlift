@@ -26,54 +26,59 @@ jobs:
         id: runs
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          echo "Looking for CI runs for commit:"
-          echo "$HEAD_SHA"
+            echo "Looking for CI runs for commit: $HEAD_SHA"
+            echo "Repository: $GH_REPO"
 
-          BACKEND_RUN=$(gh run list \
-            --workflow backend-ci.yml \
-            --commit "$HEAD_SHA" \
-            --json databaseId,status,conclusion \
-            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+            BACKEND_RUN=$(gh run list \
+              --repo "$GH_REPO" \
+              --workflow backend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json databaseId,status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
 
-          FRONTEND_RUN=$(gh run list \
-            --workflow frontend-ci.yml \
-            --commit "$HEAD_SHA" \
-            --json databaseId,status,conclusion \
-            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+            FRONTEND_RUN=$(gh run list \
+              --repo "$GH_REPO" \
+              --workflow frontend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json databaseId,status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
 
-          BACKEND_CONCLUSION=$(gh run list \
-            --workflow backend-ci.yml \
-            --commit "$HEAD_SHA" \
-            --json status,conclusion \
-            --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
+            BACKEND_CONCLUSION=$(gh run list \
+              --repo "$GH_REPO" \
+              --workflow backend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-          FRONTEND_CONCLUSION=$(gh run list \
-            --workflow frontend-ci.yml \
-            --commit "$HEAD_SHA" \
-            --json status,conclusion \
-            --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
+            FRONTEND_CONCLUSION=$(gh run list \
+              --repo "$GH_REPO" \
+              --workflow frontend-ci.yml \
+              --commit "$HEAD_SHA" \
+              --json status,conclusion \
+              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-          echo "Backend Run: $BACKEND_RUN"
-          echo "Backend Conclusion: $BACKEND_CONCLUSION"
+            echo "Backend Run: $BACKEND_RUN"
+            echo "Backend Conclusion: $BACKEND_CONCLUSION"
 
-          echo "Frontend Run: $FRONTEND_RUN"
-          echo "Frontend Conclusion: $FRONTEND_CONCLUSION"
+            echo "Frontend Run: $FRONTEND_RUN"
+            echo "Frontend Conclusion: $FRONTEND_CONCLUSION"
 
-          echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
-          echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
+            echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
+            echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
 
-          echo "backend_conclusion=$BACKEND_CONCLUSION" >> "$GITHUB_OUTPUT"
-          echo "frontend_conclusion=$FRONTEND_CONCLUSION" >> "$GITHUB_OUTPUT"
+            echo "backend_conclusion=$BACKEND_CONCLUSION" >> "$GITHUB_OUTPUT"
+            echo "frontend_conclusion=$FRONTEND_CONCLUSION" >> "$GITHUB_OUTPUT"
 
-          if [ -n "$BACKEND_RUN" ] && [ -n "$FRONTEND_RUN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "Both CI workflows are completed."
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Both CI workflows have not completed yet."
-          fi
+            if [ -n "$BACKEND_RUN" ] && [ -n "$FRONTEND_RUN" ]; then
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+              echo "Both CI workflows are completed."
+            else
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "Both CI workflows have not completed yet."
+            fi
 
       # ---------------------------------------------------------
       # If only one CI has completed, this Reporter stops here.
@@ -105,12 +110,14 @@ jobs:
         if: steps.runs.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           BACKEND_RUN: ${{ steps.runs.outputs.backend_run }}
         run: |
           echo "Downloading Backend artifacts from run:"
           echo "$BACKEND_RUN"
 
           gh run download "$BACKEND_RUN" \
+            --repo "$GH_REPO" \
             --dir ci-input/backend
 
       # ---------------------------------------------------------
@@ -121,12 +128,14 @@ jobs:
         if: steps.runs.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           FRONTEND_RUN: ${{ steps.runs.outputs.frontend_run }}
         run: |
           echo "Downloading Frontend artifacts from run:"
           echo "$FRONTEND_RUN"
 
           gh run download "$FRONTEND_RUN" \
+            --repo "$GH_REPO" \
             --dir ci-input/frontend
 
       # ---------------------------------------------------------
