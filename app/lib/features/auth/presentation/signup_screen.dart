@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/error_banner.dart';
 import '../domain/auth_validators.dart';
 import 'auth_controller.dart';
 import 'widgets/auth_form_shell.dart';
@@ -65,7 +66,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (errorMessage != null) ...[
-                AuthErrorBanner(message: errorMessage),
+                ErrorBanner(message: errorMessage),
                 const SizedBox(height: 16),
               ],
               AppTextField(
