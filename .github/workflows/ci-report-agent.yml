@@ -190,6 +190,7 @@ jobs:
       - name: Create CI metadata
         if: steps.runs.outputs.ready == 'true'
         run: |
+          mkdir -p ci-input
           cat > ci-input/metadata.txt <<EOF
           OpenLift CI Results
           ===================
