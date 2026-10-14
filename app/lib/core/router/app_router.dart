@@ -12,20 +12,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_controller.dart';
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/signup_screen.dart';
 import '../../shared/widgets/loading_indicator.dart';
-
-/// Caminhos centralizados para não espalhar strings pelo app.
-abstract final class AppRoutes {
-  static const String splash = '/splash';
-  static const String login = '/login';
-  static const String signup = '/signup';
-  static const String dashboard = '/dashboard';
-  static const String workouts = '/workouts';
-  static const String newWorkout = '/workouts/new';
-  static const String feed = '/social/feed';
-  static const String compose = '/social/compose';
-  static const String profile = '/profile';
-}
+import 'app_routes.dart';
 
 class _RouterRefresh extends ChangeNotifier {
   void notify() => notifyListeners();
@@ -73,17 +63,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Login',
-          routeName: AppRoutes.login,
-        ),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: AppRoutes.signup,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Cadastro',
-          routeName: AppRoutes.signup,
-        ),
+        builder: (context, state) => const SignupScreen(),
       ),
       GoRoute(
         path: AppRoutes.dashboard,
