@@ -1,0 +1,37 @@
+name: Copilot CLI Test
+
+'on':
+  push:
+    branches:
+      - feat/copilot-reporter
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test-copilot:
+    name: Test Copilot Access
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Check Copilot version
+        run: copilot --version
+
+      - name: Test Copilot authentication
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          copilot \
+            -p "Reply with exactly: OpenLift Copilot connection successful." \
+            -s
