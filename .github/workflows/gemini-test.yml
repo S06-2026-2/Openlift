@@ -1,47 +1,45 @@
 name: Gemini Connection Test
 
-on:
+'on':
   push:
     branches:
       - feat/copilot-reporter
 
-  workflow_dispatch:
-
-permissions:
-  contents: read
+  workflow_dispatch: {}
 
 jobs:
   test-gemini:
-    name: Test Gemini Connection
+    name: Test Gemini API
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Verify API Key
+      - name: Test Gemini Flash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then
-            echo "::error::GEMINI_API_KEY is not configured."
+            echo "::error::GEMINI_API_KEY is missing."
             exit 1
           fi
 
-          echo "Gemini API key is configured."
-
-      - name: Test Gemini CLI
-        uses: google-github-actions/run-gemini-cli@v0
-        env:
-          GEMINI_CLI_TRUST_WORKSPACE: "true"
-        with:
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          prompt: |
-            This is a connection test for the OpenLift CI Reporter.
-
-            Do not modify any files.
-            Do not execute shell commands.
-
-            Reply with exactly:
-            OpenLift Gemini connection successful.
+          curl --fail-with-body \
+            --silent \
+            --show-error \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 3 \
+            -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent" \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "contents": [{
+                "parts": [{
+                  "text": "Reply only: OpenLift connection successful."
+                }]
+              }],
+              "generationConfig": {
+                "maxOutputTokens": 100
+              }
+            }'
