@@ -2,7 +2,7 @@
 
 - Aqui, adicione uma descrição do que você fez no seu PR, quais arquivos foram alterados e quais tarefas foram concluídas.
 
-Closes #(inclua aqui o link da issue relacionada)
+Closes #(inclua aqui o número da issue relacionada)
 
 ## Tipo de mudança
 
