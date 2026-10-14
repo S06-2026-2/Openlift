@@ -3,6 +3,8 @@
 GET /exercises[?muscle_group_id=N] — exercícios com grupo muscular (login exigido)
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUser, DbSession
@@ -24,7 +26,7 @@ router = APIRouter()
 def list_exercises(
     db: DbSession,
     _user: CurrentUser,
-    muscle_group_id: int | None = Query(default=None, ge=1, description="Filtra por grupo"),
+    muscle_group_id: Annotated[int | None, Query(ge=1, description="Filtra por grupo")] = None,
 ) -> list[ExerciseOut]:
     exercises = exercise_service.list_exercises(db, muscle_group_id)
     return [ExerciseOut.model_validate(e) for e in exercises]
