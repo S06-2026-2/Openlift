@@ -8,6 +8,7 @@ abstract final class AppRoutes {
   static const String dashboard = '/dashboard';
   static const String workouts = '/workouts';
   static const String newWorkout = '/workouts/new';
+  static String editWorkout(int id) => '/workouts/$id/edit';
   static const String feed = '/social/feed';
   static const String compose = '/social/compose';
   static const String profile = '/profile';

@@ -14,6 +14,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
+import '../../features/workouts/presentation/workout_form_screen.dart';
+import '../../features/workouts/presentation/workout_history_screen.dart';
+import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import 'app_routes.dart';
 
@@ -78,16 +81,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.workouts,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Treinos',
-          routeName: AppRoutes.workouts,
-        ),
+        builder: (context, state) => const WorkoutHistoryScreen(),
         routes: [
           GoRoute(
             path: 'new',
-            builder: (context, state) => const _PlaceholderScreen(
-              title: 'Novo Treino',
-              routeName: AppRoutes.newWorkout,
+            builder: (context, state) => const WorkoutFormScreen(),
+          ),
+          GoRoute(
+            path: ':id/edit',
+            redirect: (context, state) =>
+                int.tryParse(state.pathParameters['id'] ?? '') == null
+                    ? AppRoutes.workouts
+                    : null,
+            builder: (context, state) => WorkoutFormScreen(
+              workoutId: int.parse(state.pathParameters['id']!),
             ),
           ),
         ],
@@ -179,6 +186,27 @@ class _PlaceholderScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
+              if (routeName == AppRoutes.dashboard) ...[
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 300,
+                  child: AppButton(
+                    label: 'Meus treinos',
+                    icon: Icons.history_rounded,
+                    onPressed: () => context.go(AppRoutes.workouts),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: 300,
+                  child: AppButton(
+                    label: 'Novo treino',
+                    icon: Icons.add_rounded,
+                    variant: AppButtonVariant.secondary,
+                    onPressed: () => context.go(AppRoutes.newWorkout),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
