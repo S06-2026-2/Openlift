@@ -30,7 +30,7 @@ void main() {
     await tester.pumpWidget(_app(FakeAuthRepository(session: false)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rota: /login'), findsOneWidget);
+    expect(find.text('Entrar'), findsOneWidget);
     expect(find.text('Rota: /dashboard'), findsNothing);
   });
 
@@ -45,6 +45,6 @@ void main() {
 
     expect(repository.calls, contains('logout'));
     expect(repository.session, isFalse);
-    expect(find.text('Rota: /login'), findsOneWidget);
+    expect(find.text('Entrar'), findsOneWidget);
   });
 }
