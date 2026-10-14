@@ -136,6 +136,31 @@ void main() {
     });
   });
 
+  group('AppTextField — confirmação', () {
+    testWidgets('dispara onFieldSubmitted ao confirmar (Enter)', (tester) async {
+      String? submitted;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: AppTextField(
+              label: 'Senha',
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (value) => submitted = value,
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField), 'minha-senha-123');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(submitted, equals('minha-senha-123'));
+    });
+  });
+
   group('LoadingIndicator', () {
     testWidgets('renderiza CircularProgressIndicator com e sem mensagem', (tester) async {
       await tester.pumpWidget(

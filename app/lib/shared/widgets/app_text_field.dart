@@ -16,6 +16,7 @@ class AppTextField extends StatelessWidget {
     this.suffixIcon,
     this.enabled = true,
     this.onChanged,
+    this.onFieldSubmitted,
     this.textInputAction,
     this.initialValue,
     this.maxLines = 1,
@@ -51,6 +52,9 @@ class AppTextField extends StatelessWidget {
   /// Callback disparado a cada alteração no texto.
   final ValueChanged<String>? onChanged;
 
+  /// Callback disparado ao confirmar (Enter no teclado/web).
+  final ValueChanged<String>? onFieldSubmitted;
+
   /// Ação do teclado ao confirmar (next, done etc.).
   final TextInputAction? textInputAction;
 
@@ -83,6 +87,7 @@ class AppTextField extends StatelessWidget {
           keyboardType: keyboardType,
           enabled: enabled,
           onChanged: onChanged,
+          onFieldSubmitted: onFieldSubmitted,
           textInputAction: textInputAction,
           maxLines: maxLines,
           decoration: InputDecoration(
