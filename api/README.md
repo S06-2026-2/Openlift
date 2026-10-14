@@ -55,6 +55,23 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `JWT_EXPIRATION_MINUTES` / `JWT_REFRESH_EXPIRATION_DAYS` | Duração do access e do refresh token |
 | `CORS_ORIGIN_REGEX` | Origens liberadas no CORS (padrão: qualquer porta em `localhost`) |
 
+## Rotas (`/api/v1`)
+
+Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e `/version`.
+
+| Método | Rota | O que faz |
+|---|---|---|
+| POST | `/auth/register` | Cadastro (201; e-mail duplicado → 409) |
+| POST | `/auth/login` | Login (par de tokens; senha errada → 401) |
+| POST | `/auth/refresh` | Troca o refresh token por um novo par |
+| GET | `/exercises` | Biblioteca com grupo muscular (`?muscle_group_id=`) |
+| POST / GET | `/workouts` | Cria treino / histórico paginado (`date_from`, `date_to`, `exercise_id`, `muscle_group_id`, `limit`, `offset`) |
+| GET / PATCH / DELETE | `/workouts/{id}` | Detalha, edita (`sets` enviado substitui todas as séries) e exclui |
+| POST | `/workouts/{id}/sets` | Adiciona uma série |
+| PATCH / DELETE | `/workouts/{id}/sets/{set_id}` | Edita ou remove uma série |
+
+Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.
+
 ## Erros
 
 Toda resposta de erro segue `{"detail": "mensagem em português", "code": "identificador_estavel"}`. Erros de validação (422) também trazem `errors`, com o campo e o motivo.
