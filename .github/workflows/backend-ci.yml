@@ -29,28 +29,61 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ruff
-        run: ruff check .
+        id: ruff
+        continue-on-error: true
+        run: |
+          mkdir -p reports 
+          set -o pipefail
+          ruff check . 2>&1 | tee reports/ruff.txt
 
       - name: Black
-        run: black --check .
+        id: black
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          black --check . 2>&1 | tee reports/black.txt
 
       - name: MyPy
-        run: mypy .
+        id: mypy
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          mypy . 2>&1 | tee reports/mypy.txt
 
-      - name: Save lint results
+      - name: Create lint summary
         if: always()
         run: |
-          mkdir -p reports
-          echo "Backend static analysis executed." > reports/lint-result.txt
-          echo "Tools: Ruff, Black and MyPy" >> reports/lint-result.txt
+          {
+            echo "Backend Static Analysis"
+            echo "======================="
+            echo "Ruff: ${{ steps.ruff.outcome }}"
+            echo "Black: ${{ steps.black.outcome }}"
+            echo "MyPy: ${{ steps.mypy.outcome }}"
+          } > reports/summary.txt
 
       - name: Upload lint results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-lint-results
-          path: api/reports/lint-result.txt
+          path: |
+            api/reports/ruff.txt
+            api/reports/black.txt
+            api/reports/mypy.txt
+            api/reports/summary.txt
           if-no-files-found: warn
+
+      - name: Validate lint results
+        if: always()
+        run: |
+          if [ "${{ steps.ruff.outcome }}" != "success" ] || \
+             [ "${{ steps.black.outcome }}" != "success" ] || \
+             [ "${{ steps.mypy.outcome }}" != "success" ]; then
+            echo "One or more backend static analysis checks failed."
+            exit 1
+          fi
+
+          echo "All backend static analysis checks passed."
 
   test:
     name: Backend Test
@@ -78,12 +111,26 @@ jobs:
         run: mkdir -p reports
 
       - name: Run tests
-        run: >
-          pytest
-          --cov=app
-          --cov-report=term-missing
-          --cov-report=xml:reports/coverage.xml
-          --junitxml=reports/junit.xml
+        id: pytest
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pytest \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml:reports/coverage.xml \
+            --junitxml=reports/junit.xml \
+            2>&1 | tee reports/pytest.txt
+
+
+      - name: Create test summary
+        if: always()
+        run: |
+          {
+            echo "Backend Test Results"
+            echo "===================="
+            echo "Pytest: ${{ steps.pytest.outcome }}"
+          } > reports/summary.txt
 
       - name: Upload test results
         if: always()
@@ -91,6 +138,18 @@ jobs:
         with:
           name: backend-test-results
           path: |
+            api/reports/pytest.txt
             api/reports/junit.xml
             api/reports/coverage.xml
+            api/reports/summary.txt
           if-no-files-found: warn
+      
+      - name: Validate test results
+        if: always()
+        run: |
+          if [ "${{ steps.pytest.outcome }}" != "success" ]; then
+            echo "Backend tests failed."
+            exit 1
+          fi
+
+          echo "All backend tests passed."

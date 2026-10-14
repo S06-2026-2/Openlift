@@ -28,21 +28,39 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
-
-      - name: Save analyze results
-        if: always()
+        id: analyze
+        continue-on-error: true
         run: |
           mkdir -p reports
-          echo "Flutter Analyze was executed." > reports/analyze-result.txt
-
+          set -o pipefail
+          flutter analyze 2>&1 | tee reports/analyze.txt
+      
+      - name: Create analyze summary
+        if: always()
+        run: |
+          {
+            echo "Frontend Static Analysis"
+            echo "========================"
+            echo "Flutter Analyze: ${{ steps.analyze.outcome }}"
+          } > reports/summary.txt
+           
       - name: Upload analyze results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-analysis-results
-          path: app/reports/analyze-result.txt
+          path: |
+            app/reports/analyze.txt
+            app/reports/summary.txt
           if-no-files-found: warn
+
+      - name: Validate analyze results
+        if: always()
+        run: |
+          if [ "${{ steps.analyze.outcome }}" != "success" ]; then
+            echo "Flutter analyze failed. Please check the analysis report."
+            exit 1
+          fi
 
   test:
     name: Flutter Test
@@ -65,13 +83,42 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create reports directory
+        run: mkdir -p reports
+
       - name: Run tests with coverage
-        run: flutter test --coverage
+        id: flutter_test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter test --coverage 2>&1 | tee reports/test.txt
+
+      - name: Create test summary
+        if: always()
+        run: |
+          {
+            echo "Frontend Test Results"
+            echo "====================="
+            echo "Flutter Test: ${{ steps.flutter_test.outcome }}"
+          } > reports/summary.txt
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-test-results
-          path: app/coverage/
+          path: |
+            app/reports/test.txt
+            app/reports/summary.txt
+            app/coverage/lcov.info
           if-no-files-found: warn
+
+      - name: Validate test results
+        if: always()
+        run: |
+          if [ "${{ steps.flutter_test.outcome }}" != "success" ]; then
+            echo "Flutter tests failed. Please check the test report."
+            exit 1
+          fi
+
+          echo "Flutter tests passed successfully."
