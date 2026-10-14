@@ -1,9 +1,35 @@
-// Sprint 2 — Modelo de usuário no app.
+// FE-01 — Modelo de usuário no app.
 //
-// Espelha o retorno de /auth/login e /auth/register no backend:
-// { id, email, npub, createdAt }.
+// Espelha o `UserOut` do backend (POST /auth/register): { id, email, npub,
+// created_at }. `npub` é nulo até a identidade NOSTR ser registrada.
 
 class UserModel {
-  // TODO(Sprint 2): campos id, email, npub, createdAt.
-  // TODO(Sprint 2): fromJson / toJson.
+  const UserModel({
+    required this.id,
+    required this.email,
+    this.npub,
+    this.createdAt,
+  });
+
+  final int id;
+  final String email;
+  final String? npub;
+  final DateTime? createdAt;
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['created_at'];
+    return UserModel(
+      id: (json['id'] as num).toInt(),
+      email: json['email'] as String,
+      npub: json['npub'] as String?,
+      createdAt: createdAt is String ? DateTime.tryParse(createdAt) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'email': email,
+        'npub': npub,
+        'created_at': createdAt?.toIso8601String(),
+      };
 }
