@@ -1,0 +1,47 @@
+name: Gemini Connection Test
+
+on:
+  push:
+    branches:
+      - feat/copilot-reporter
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-gemini:
+    name: Test Gemini Connection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify API Key
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::GEMINI_API_KEY is not configured."
+            exit 1
+          fi
+
+          echo "Gemini API key is configured."
+
+      - name: Test Gemini CLI
+        uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: "true"
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            This is a connection test for the OpenLift CI Reporter.
+
+            Do not modify any files.
+            Do not execute shell commands.
+
+            Reply with exactly:
+            OpenLift Gemini connection successful.
