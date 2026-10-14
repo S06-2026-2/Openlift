@@ -104,6 +104,31 @@ void main() {
     });
   });
 
+  group('AppButton — rótulo longo', () {
+    testWidgets('não estoura em espaço estreito (ellipsis)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 140,
+                child: AppButton(
+                  label: 'Registrar primeiro treino de hoje',
+                  icon: Icons.add_rounded,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Registrar primeiro treino de hoje'), findsOneWidget);
+    });
+  });
+
   group('AppTextField', () {
     testWidgets('renderiza label, hintText e aceita digitação', (tester) async {
       final controller = TextEditingController();
