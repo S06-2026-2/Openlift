@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     jwt_refresh_expiration_days: int = 7
     jwt_algorithm: str = "HS256"
 
+    # BE-02 — origens liberadas no CORS (Flutter web em localhost:<porta qualquer>)
+    cors_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+
     # Sprint 4-5 — opcionais até os workers existirem
     redis_url: str | None = None
     nostr_relays: str | None = None
