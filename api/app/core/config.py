@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # Sprint 2
     jwt_secret: str = "change-me"
     jwt_expiration_minutes: int = 30
+    jwt_refresh_expiration_days: int = 7
+    jwt_algorithm: str = "HS256"
 
     # Sprint 4-5 — opcionais até os workers existirem
     redis_url: str | None = None
