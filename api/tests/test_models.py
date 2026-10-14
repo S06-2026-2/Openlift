@@ -14,6 +14,8 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.domain.models.exercise import Exercise
+from app.domain.models.muscle_group import MuscleGroup
 from app.domain.models.nostr_identity import NostrIdentity
 from app.domain.models.set import WorkoutSet
 from app.domain.models.user import User
@@ -120,11 +122,18 @@ def test_create_workout_set_success(db_session: Session) -> None:
 
     workout = Workout(user_id=user.id, date=date.today())
     db_session.add(workout)
+    # Desde o BE-03, sets.exercise_id é FK para exercises: a série precisa de um
+    # exercício real.
+    chest = MuscleGroup(name="Peito")
+    db_session.add(chest)
+    db_session.flush()
+    bench = Exercise(name="Supino reto", muscle_group_id=chest.id)
+    db_session.add(bench)
     db_session.commit()
 
     workout_set = WorkoutSet(
         workout_id=workout.id,
-        exercise_id=1,  # Supino reto
+        exercise_id=bench.id,
         reps=5,
         weight_kg=Decimal("102.50"),
         rpe=Decimal("8.5"),
@@ -138,7 +147,7 @@ def test_create_workout_set_success(db_session: Session) -> None:
     # Assert
     assert workout_set.id is not None
     assert workout_set.workout_id == workout.id
-    assert workout_set.exercise_id == 1
+    assert workout_set.exercise_id == bench.id
     assert workout_set.reps == 5
     assert workout_set.weight_kg == Decimal("102.50")
     assert workout_set.rpe == Decimal("8.5")
