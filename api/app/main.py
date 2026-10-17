@@ -4,13 +4,28 @@ Sprint 1: cria a app, expõe /health (checando o Postgres) e /version.
 Sprint 2+: inclui o router agregado de app.api.v1 (auth, workouts, stats, social).
 """
 
+import structlog
 from fastapi import FastAPI
 from sqlalchemy import text
 
 from app.core.config import get_settings
 from app.core.database import engine
+from app.core.logging import configure_logging
+from app.core.middleware import RequestLoggingMiddleware
 
+configure_logging()
+
+logger = structlog.get_logger()
 app = FastAPI(title="OpenLift API", version="0.1.0")
+app.add_middleware(RequestLoggingMiddleware)
+
+
+@app.on_event("startup")
+async def log_startup():
+    logger.info(
+        "application_started",
+        service="openlift-api",
+    )
 
 
 @app.get("/health")
