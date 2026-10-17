@@ -14,6 +14,7 @@ from sqlalchemy import text
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.database import engine
+<<<<<<< HEAD
 from app.core.errors import register_exception_handlers
 
 import logging
@@ -47,6 +48,24 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+=======
+from app.core.logging import configure_logging
+from app.core.middleware import RequestLoggingMiddleware
+
+configure_logging()
+
+logger = structlog.get_logger()
+app = FastAPI(title="OpenLift API", version="0.1.0")
+app.add_middleware(RequestLoggingMiddleware)
+
+
+@app.on_event("startup")
+async def log_startup():
+    logger.info(
+        "application_started",
+        service="openlift-api",
+    )
+>>>>>>> 1db2c8f (addind module in requirements and setting in main)
 
 
 @app.get("/health", tags=["system"], summary="Saúde da API (checa o banco)")
