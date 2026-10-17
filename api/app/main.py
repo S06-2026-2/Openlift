@@ -7,10 +7,12 @@ Sprint 2+: inclui o router agregado de app.api.v1 (auth, workouts, stats, social
 from fastapi import FastAPI
 from sqlalchemy import text
 
+from app.api.health import router as health_router
 from app.core.config import get_settings
 from app.core.database import engine
 
 app = FastAPI(title="OpenLift API", version="0.1.0")
+app.include_router(health_router)
 
 
 @app.get("/health")
