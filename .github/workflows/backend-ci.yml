@@ -89,6 +89,27 @@ jobs:
     name: Backend Test
     runs-on: ubuntu-latest
 
+  
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: openlift
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: openlift_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openlift -d openlift_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+psycopg://openlift:test_password@localhost:5432/openlift_test
+      TEST_POSTGRES_URL: postgresql+psycopg://openlift:test_password@localhost:5432/openlift_test
+      ENV: testing
+
     defaults:
       run:
         working-directory: api
@@ -106,6 +127,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Apply PostgreSQL migrations
+        run: alembic upgrade head
 
       - name: Create reports directory
         run: mkdir -p reports
