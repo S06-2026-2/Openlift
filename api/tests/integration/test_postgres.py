@@ -1,4 +1,3 @@
-
 """Testes de integração utilizando PostgreSQL real."""
 
 import os
@@ -29,9 +28,7 @@ def postgres_engine():
             result = connection.execute(text("SELECT 1"))
             assert result.scalar_one() == 1
 
-            table = connection.execute(
-                text("SELECT to_regclass('public.users')")
-            ).scalar_one()
+            table = connection.execute(text("SELECT to_regclass('public.users')")).scalar_one()
 
             assert table == "users", "Execute alembic upgrade head"
 
@@ -66,9 +63,7 @@ def test_postgres_persists_and_reads_user(postgres_session):
     postgres_session.add(user)
     postgres_session.commit()
 
-    result = postgres_session.scalar(
-        select(User).where(User.email == email)
-    )
+    result = postgres_session.scalar(select(User).where(User.email == email))
 
     assert result is not None
     assert result.id is not None
@@ -78,14 +73,10 @@ def test_postgres_persists_and_reads_user(postgres_session):
 def test_postgres_rejects_duplicate_email(postgres_session):
     email = f"integration-{uuid4().hex}@openlift.test"
 
-    postgres_session.add(
-        User(email=email, hashed_password="hash1")
-    )
+    postgres_session.add(User(email=email, hashed_password="hash1"))
     postgres_session.commit()
 
-    postgres_session.add(
-        User(email=email, hashed_password="hash2")
-    )
+    postgres_session.add(User(email=email, hashed_password="hash2"))
 
     with pytest.raises(IntegrityError):
         postgres_session.commit()
