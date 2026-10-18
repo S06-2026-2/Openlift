@@ -10,6 +10,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/loading_indicator.dart';
+import '../../../shared/widgets/page_layout.dart';
 import '../domain/exercise_model.dart';
 import '../domain/workout_model.dart';
 import 'widgets/state_views.dart';
@@ -82,16 +83,16 @@ class WorkoutHistoryScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Treinos'),
-        leading: BackButton(onPressed: () => context.go(AppRoutes.dashboard)),
         actions: [
           IconButton(
             tooltip: 'Filtrar',
             onPressed: () => _openFilter(context, ref),
             icon: Badge(
               isLabelVisible: filter.isActive,
-              child: const Icon(Icons.filter_list_rounded),
+              child: const Icon(Icons.tune_rounded, size: 20),
             ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -127,8 +128,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                   : EmptyStateView(
                       icon: Icons.fitness_center_rounded,
                       title: 'Nenhum treino ainda',
-                      description:
-                          'Registre seu primeiro treino e acompanhe '
+                      description: 'Registre seu primeiro treino e acompanhe '
                           'sua evolução por aqui.',
                       actionLabel: 'Registrar primeiro treino',
                       onAction: () => context.go(AppRoutes.newWorkout),
@@ -138,22 +138,37 @@ class WorkoutHistoryScreen extends ConsumerWidget {
 
           return RefreshIndicator(
             onRefresh: () => ref.refresh(workoutControllerProvider.future),
-            child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final workout = items[index];
-                return _WorkoutCard(
-                  workout: workout,
-                  exercises: exercises,
-                  onTap: workout.id == null
-                      ? null
-                      : () => context.go(AppRoutes.editWorkout(workout.id!)),
-                  onDelete: () => _confirmDelete(context, ref, workout),
-                );
-              },
+            child: LayoutBuilder(
+              builder: (context, constraints) => ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: pagePadding(constraints, bottom: 96),
+                children: [
+                  SectionLabel(
+                    items.length == 1 ? '1 treino' : '${items.length} treinos',
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < items.length; i++) ...[
+                          if (i > 0) const Divider(),
+                          _WorkoutRow(
+                            workout: items[i],
+                            exercises: exercises,
+                            onTap: items[i].id == null
+                                ? null
+                                : () => context
+                                    .go(AppRoutes.editWorkout(items[i].id!)),
+                            onDelete: () =>
+                                _confirmDelete(context, ref, items[i]),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -162,8 +177,8 @@ class WorkoutHistoryScreen extends ConsumerWidget {
   }
 }
 
-class _WorkoutCard extends StatelessWidget {
-  const _WorkoutCard({
+class _WorkoutRow extends StatelessWidget {
+  const _WorkoutRow({
     required this.workout,
     required this.exercises,
     required this.onTap,
@@ -188,48 +203,49 @@ class _WorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.7);
     final setsCount = workout.sets.length;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      formatDateBr(workout.date),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _exerciseSummary,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$setsCount ${setsCount == 1 ? 'série' : 'séries'}'
-                      ' · ${formatKg(workout.volumeKg)}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                    ),
-                  ],
-                ),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    formatDateBr(workout.date),
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _exerciseSummary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$setsCount ${setsCount == 1 ? 'série' : 'séries'}'
+                    ' · ${formatKg(workout.volumeKg)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Excluir treino',
-                icon: const Icon(Icons.delete_outline_rounded),
-                onPressed: onDelete,
-              ),
-            ],
-          ),
+            ),
+            IconButton(
+              tooltip: 'Excluir treino',
+              icon: const Icon(Icons.delete_outline_rounded, size: 20),
+              onPressed: onDelete,
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );

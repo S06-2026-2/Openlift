@@ -14,10 +14,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/loading_indicator.dart';
+import '../../../shared/widgets/page_layout.dart';
 import '../domain/exercise_model.dart';
 import '../domain/set_model.dart';
 import '../domain/workout_model.dart';
@@ -331,51 +333,61 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-          children: [
-            _DateTile(date: _date, onTap: _pickDate),
-            const SizedBox(height: 16),
-            if (_error != null) ...[
-              ErrorBanner(message: _error!),
+        child: LayoutBuilder(
+          builder: (context, constraints) => ListView(
+            padding: pagePadding(constraints),
+            children: [
+              _DateTile(date: _date, onTap: _pickDate),
               const SizedBox(height: 16),
-            ],
-            if (_blocks.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  'Nenhum exercício ainda. Adicione o primeiro para '
-                  'registrar suas séries.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              if (_error != null) ...[
+                ErrorBanner(message: _error!),
+                const SizedBox(height: 16),
+              ],
+              if (_blocks.isEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Text(
+                    'Nenhum exercício ainda. Adicione o primeiro para '
+                    'registrar suas séries.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-              ),
-            for (final block in _blocks) ...[
-              _ExerciseCard(
-                block: block,
-                onAddRow: () => _addRow(block),
-                onRepeatLast: () => _repeatLast(block),
-                onRemoveRow: (row) => _removeRow(block, row),
-                onRemoveBlock: () => _removeBlock(block),
-                onTypeChanged: (row, type) => setState(() => row.type = type),
+              for (final block in _blocks) ...[
+                _ExerciseCard(
+                  block: block,
+                  onAddRow: () => _addRow(block),
+                  onRepeatLast: () => _repeatLast(block),
+                  onRemoveRow: (row) => _removeRow(block, row),
+                  onRemoveBlock: () => _removeBlock(block),
+                  onTypeChanged: (row, type) => setState(() => row.type = type),
+                ),
+                const SizedBox(height: 12),
+              ],
+              AppButton(
+                label: 'Adicionar exercício',
+                icon: Icons.add_rounded,
+                variant: AppButtonVariant.secondary,
+                onPressed: _saving ? null : _addExercise,
               ),
               const SizedBox(height: 12),
+              AppButton(
+                label: 'Salvar treino',
+                isLoading: _saving,
+                onPressed: _save,
+              ),
             ],
-            AppButton(
-              label: 'Adicionar exercício',
-              icon: Icons.add_rounded,
-              variant: AppButtonVariant.secondary,
-              onPressed: _saving ? null : _addExercise,
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              label: 'Salvar treino',
-              isLoading: _saving,
-              onPressed: _save,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -392,24 +404,29 @@ class _DateTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final muted = theme.colorScheme.onSurfaceVariant;
+
     return Material(
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         side: BorderSide(color: theme.colorScheme.outline),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
-              const Icon(Icons.calendar_today_rounded, size: 20),
-              const SizedBox(width: 12),
-              Text('Data: ${formatDateBr(date)}'),
+              Text('Data',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: muted,
+                  )),
               const Spacer(),
-              const Icon(Icons.edit_calendar_rounded, size: 20),
+              Text(formatDateBr(date), style: theme.textTheme.titleSmall),
+              const SizedBox(width: 10),
+              Icon(Icons.calendar_today_outlined, size: 16, color: muted),
             ],
           ),
         ),
@@ -438,35 +455,40 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
-    final headerStyle = theme.textTheme.labelSmall?.copyWith(color: muted);
+    final headerStyle = theme.textTheme.labelSmall;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    block.exercise.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        block.exercise.name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      Text(
+                        block.exercise.muscleGroup,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
-                Text(block.exercise.muscleGroup, style: headerStyle),
                 IconButton(
                   tooltip: 'Remover exercício',
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
                   onPressed: onRemoveBlock,
                 ),
               ],
             ),
             if (block.rows.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   SizedBox(width: 28, child: Text('#', style: headerStyle)),
@@ -477,7 +499,8 @@ class _ExerciseCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     flex: 4,
-                    child: Center(child: Text('Carga (kg)', style: headerStyle)),
+                    child:
+                        Center(child: Text('Carga (kg)', style: headerStyle)),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -598,12 +621,18 @@ class _SetRowView extends StatelessWidget {
                   height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    color: row.type == SetType.normal
+                        ? null
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.outline,
                     ),
                   ),
-                  child: Text(row.type.shortLabel),
+                  child: Text(
+                    row.type.shortLabel,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                 ),
               ),
             ),

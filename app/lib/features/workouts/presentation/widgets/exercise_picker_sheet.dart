@@ -80,14 +80,10 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
                             for (final entry in groups.entries) ...[
                               Padding(
                                 padding:
-                                    const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                                    const EdgeInsets.fromLTRB(16, 20, 16, 6),
                                 child: Text(
                                   entry.key.toUpperCase(),
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.8,
-                                  ),
+                                  style: theme.textTheme.labelSmall,
                                 ),
                               ),
                               for (final exercise in entry.value)
