@@ -1,0 +1,24 @@
+# Hooks locais do backend: ruff (lint + imports) e black (formatação), nas
+# mesmas versões do api/requirements.txt e do CI. A configuração das duas
+# ferramentas vem do api/pyproject.toml.
+#
+# Instalação (uma vez por clone, a partir da raiz do repositório):
+#   pip install pre-commit
+#   pre-commit install --config api/.pre-commit-config.yaml
+#
+# Rodar em todos os arquivos manualmente:
+#   pre-commit run --all-files --config api/.pre-commit-config.yaml
+
+files: ^api/
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
