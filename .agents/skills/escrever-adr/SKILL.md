@@ -39,3 +39,7 @@ Se faltar o motivo ou a decisão estiver ambígua, **pergunte** em vez de invent
 ## Saída
 
 O arquivo do ADR e um resumo de 3 linhas para a descrição do PR: decisão, motivo principal e principal consequência.
+
+## Exemplo
+
+[`examples/exemplo-entrada-e-saida.md`](examples/exemplo-entrada-e-saida.md) mostra a entrada recebida e o ADR gerado. ADRs reais do projeto, para comparar o tom: [`docs/adr/`](../../../docs/adr/).
