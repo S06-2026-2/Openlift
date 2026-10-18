@@ -8,6 +8,8 @@ Projeto acadêmico da disciplina de Produto de Software (turma S06-2026-2).
 
 **Fonte única de contexto:** [`docs/CONTEXTO.md`](docs/CONTEXTO.md) — decisões (ADRs), requisitos, calendário, riscos, o que falta. Se algo aqui conflitar com lá, `docs/CONTEXTO.md` vence; corrija aqui depois.
 
+**Instruções para agentes de IA** (regras invioláveis, convenções de código, skills): @AGENTS.md
+
 ## Estrutura do repositório
 
 ```
