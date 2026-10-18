@@ -59,6 +59,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final errorMessage = auth?.errorMessage;
 
     return AuthFormShell(
+      title: 'Crie sua conta',
+      subtitle: 'Seu histórico de treino, sob o seu controle.',
       children: [
         Form(
           key: _formKey,
@@ -77,21 +79,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 textInputAction: TextInputAction.next,
                 enabled: !isSubmitting,
                 validator: AuthValidators.email,
-                prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
               const SizedBox(height: 16),
               AppTextField(
                 label: 'Senha',
-                hintText: 'Mínimo de ${AuthValidators.minPasswordLength} caracteres',
+                hintText:
+                    'Mínimo de ${AuthValidators.minPasswordLength} caracteres',
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.next,
                 enabled: !isSubmitting,
                 validator: AuthValidators.password,
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
-                  tooltip:
-                      _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                  tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_outlined
@@ -113,7 +113,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   _passwordController.text,
                 ),
                 onFieldSubmitted: (_) => _submit(),
-                prefixIcon: const Icon(Icons.lock_reset_rounded),
               ),
               const SizedBox(height: 24),
               AppButton(

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// Aviso de erro em linguagem humana (nunca stack trace).
 class ErrorBanner extends StatelessWidget {
   const ErrorBanner({super.key, required this.message});
@@ -16,17 +18,20 @@ class ErrorBanner extends StatelessWidget {
     return Semantics(
       liveRegion: true,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline_rounded, color: color, size: 20),
-            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(Icons.error_outline_rounded, color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,

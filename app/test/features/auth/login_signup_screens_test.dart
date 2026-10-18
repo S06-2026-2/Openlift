@@ -94,7 +94,7 @@ void main() {
 
       expect(find.text('E-mail ou senha incorretos.'), findsOneWidget);
       expect(find.text('Entrar'), findsOneWidget);
-      expect(find.text('Rota: /dashboard'), findsNothing);
+      expect(find.text('Meus treinos'), findsNothing);
     });
 
     testWidgets('sucesso leva ao dashboard', (tester) async {
@@ -107,7 +107,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['login:a@b.com']);
-      expect(find.text('Rota: /dashboard'), findsOneWidget);
+      expect(find.text('Meus treinos'), findsOneWidget);
     });
 
     testWidgets('botão mostra loading e bloqueia os campos durante o login',
@@ -131,7 +131,7 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
-      expect(find.text('Rota: /dashboard'), findsOneWidget);
+      expect(find.text('Meus treinos'), findsOneWidget);
     });
 
     testWidgets('Enter no campo de senha envia o formulário', (tester) async {
@@ -144,7 +144,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['login:a@b.com']);
-      expect(find.text('Rota: /dashboard'), findsOneWidget);
+      expect(find.text('Meus treinos'), findsOneWidget);
     });
 
     testWidgets('olho alterna a visibilidade da senha', (tester) async {
@@ -206,7 +206,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, ['register:novo@b.com', 'login:novo@b.com']);
-      expect(find.text('Rota: /dashboard'), findsOneWidget);
+      expect(find.text('Meus treinos'), findsOneWidget);
     });
 
     testWidgets('e-mail já cadastrado mostra aviso claro', (tester) async {

@@ -59,6 +59,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final errorMessage = auth?.errorMessage;
 
     return AuthFormShell(
+      title: 'Acesse sua conta',
+      subtitle: 'Seu treino. Seus dados.',
       children: [
         Form(
           key: _formKey,
@@ -77,7 +79,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textInputAction: TextInputAction.next,
                 enabled: !isSubmitting,
                 validator: AuthValidators.email,
-                prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
               const SizedBox(height: 16),
               AppTextField(
@@ -88,10 +89,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 enabled: !isSubmitting,
                 validator: AuthValidators.password,
                 onFieldSubmitted: (_) => _submit(),
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
-                  tooltip:
-                      _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                  tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_outlined

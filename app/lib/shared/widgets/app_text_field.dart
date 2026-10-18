@@ -1,4 +1,4 @@
-// Sprint 1 — Input padrão do design system (label, erro, tipos: texto/senha/número).
+// Input padrão do design system (label, erro, tipos: texto/senha/número).
 
 import 'package:flutter/material.dart';
 
@@ -73,11 +73,9 @@ class AppTextField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.labelLarge,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
         ],
         TextFormField(
           controller: controller,

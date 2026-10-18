@@ -1,51 +1,67 @@
-// FE-02 — Casca visual compartilhada por Login e Cadastro (marca + conteúdo
-// centralizado, com largura máxima confortável na web).
+// FE-02 — Casca visual compartilhada por Login e Cadastro: marca, título da
+// tela e o formulário numa coluna estreita. Em telas largas o conteúdo fica
+// num cartão com borda fina.
 
 import 'package:flutter/material.dart';
 
-class AuthFormShell extends StatelessWidget {
-  const AuthFormShell({super.key, required this.children});
+import '../../../../shared/widgets/brand_mark.dart';
 
+class AuthFormShell extends StatelessWidget {
+  const AuthFormShell({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.children,
+  });
+
+  final String title;
+  final String subtitle;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(title, style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 28),
+        ...children,
+      ],
+    );
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.fitness_center_rounded,
-                    size: 48,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'OpenLift',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Seu treino. Seus dados.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
+                  const Center(child: BrandMark(size: 32)),
                   const SizedBox(height: 32),
-                  ...children,
+                  if (wide)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: content,
+                      ),
+                    )
+                  else
+                    content,
                 ],
               ),
             ),

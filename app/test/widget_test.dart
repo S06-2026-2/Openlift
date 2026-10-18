@@ -21,8 +21,8 @@ void main() {
     await tester.pumpWidget(_app(FakeAuthRepository(session: true)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dashboard'), findsWidgets);
-    expect(find.text('Rota: /dashboard'), findsOneWidget);
+    expect(find.text('Início'), findsWidgets);
+    expect(find.text('Meus treinos'), findsOneWidget);
   });
 
   testWidgets('sem sessão, a rota protegida redireciona para /login',
@@ -31,7 +31,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Entrar'), findsOneWidget);
-    expect(find.text('Rota: /dashboard'), findsNothing);
+    expect(find.text('Meus treinos'), findsNothing);
   });
 
   testWidgets('sair limpa a sessão e volta para /login',
@@ -46,5 +46,41 @@ void main() {
     expect(repository.calls, contains('logout'));
     expect(repository.session, isFalse);
     expect(find.text('Entrar'), findsOneWidget);
+  });
+
+  testWidgets('navegação inferior leva ao Perfil, que permite sair',
+      (WidgetTester tester) async {
+    final repository = FakeAuthRepository(session: true);
+    await tester.pumpWidget(_app(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+
+    await tester.tap(find.text('Perfil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Perfil em breve'), findsOneWidget);
+
+    await tester.tap(find.text('Sair da conta'));
+    await tester.pumpAndSettle();
+    expect(repository.session, isFalse);
+    expect(find.text('Entrar'), findsOneWidget);
+  });
+
+  testWidgets('tela larga usa barra lateral no lugar da inferior',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_app(FakeAuthRepository(session: true)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    await tester.tap(find.text('Social'));
+    await tester.pumpAndSettle();
+    expect(find.text('Feed social em breve'), findsOneWidget);
   });
 }
