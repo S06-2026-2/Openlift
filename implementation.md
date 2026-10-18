@@ -1,5 +1,7 @@
 # OpenLift — Plano de Implementação
 
+> **Documento histórico — vigente: [`docs/CONTEXTO.md`](docs/CONTEXTO.md).** Este roadmap foi parcialmente substituído: compartilhar treino como `kind 1`, gates de cobertura até 80% e sprints atravessando checkpoint foram descartados. As decisões em vigor estão em [`docs/adr/`](docs/adr/).
+
 Plano de 12 semanas, dividido em 6 sprints de 2 semanas, para o desenvolvimento do OpenLift: um app de treino com registro de histórico, dashboards analíticos (incluindo mapa de calor de volume por grupo muscular) e compartilhamento social via protocolo [NOSTR](https://nostr.com/).
 
 Projeto acadêmico da disciplina de Produto de Software — o plano equilibra entregas funcionais, boas práticas de Engenharia de Software e configuração de infraestrutura.
