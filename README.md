@@ -28,17 +28,65 @@ Wireframes de baixa fidelidade das 5 telas núcleo (Login, Dashboard, Novo Trein
 ## Rodando localmente
 
 ```bash
+# Variáveis de ambiente (só para rodar pytest/alembic fora do Docker;
+# no docker compose elas já vêm do compose)
+cp api/.env.example api/.env
+
 # Backend + banco de dados
 cd infra/docker
 docker compose up --build
+docker compose run --rm api alembic upgrade head          # migrations
+docker compose run --rm api python -m app.infra.db.seed   # biblioteca de exercícios
 
 # Frontend
 cd app
 flutter pub get
-flutter run
+flutter run -d chrome
 ```
 
-Veja `api/.env.example` para as variáveis de ambiente necessárias.
+Veja `api/.env.example` para as variáveis de ambiente e [`api/README.md`](api/README.md) para rotas, testes e migrations do backend.
+
+## Contribuindo
+
+Regras completas em [`CLAUDE.md`](CLAUDE.md) (valem para humanos e agentes de IA). O essencial:
+
+- **Toda tarefa nasce de uma issue.** Uma issue, uma branch, um PR (`feat/…`, `fix/…`, `docs/…`, `chore/…`).
+- Commits em [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`.
+- Merge em `main` só via PR com **ao menos 1 aprovação** de outra pessoa; o PR referencia a issue (`Closes #N`) e declara o uso de IA.
+- ADRs em [`docs/adr/`](docs/adr/) não se reabrem sem discussão no grupo.
+
+### Hooks locais (pre-commit)
+
+O backend tem hooks de `ruff` e `black` que barram commit mal formatado antes de chegar no CI. Instale uma vez por clone, a partir da raiz do repositório:
+
+```bash
+pip install pre-commit
+pre-commit install --config api/.pre-commit-config.yaml
+```
+
+A partir daí, todo `git commit` que toca `api/` roda os dois hooks. Se eles corrigirem algum arquivo, o commit é interrompido: confira a mudança, faça `git add` de novo e repita o commit. Para rodar em tudo manualmente: `pre-commit run --all-files --config api/.pre-commit-config.yaml`.
+
+### Definition of Done
+
+Uma história só está pronta quando:
+
+1. Código em `main` via PR revisado por outra pessoa
+2. Lint passando (`ruff`, `black`, `flutter analyze`)
+3. Teste automatizado cobrindo o caminho principal e os critérios de aceite
+4. CI verde
+5. QA validou contra o critério de aceite escrito **antes** da sprint
+6. Documentação atualizada se mudou comportamento ou instalação
+7. Uso de IA declarado no PR (se houver)
+
+## Escopo
+
+**Obrigatório:** registro de treino (exercício, série, carga, repetições, RPE opcional) · histórico com filtro por data e exercício · identidade NOSTR gerada localmente · publicar treino como evento no relay e ler treinos de outras pessoas · feed social com like · dashboard com estatística semanal e mapa de calor de volume por grupo muscular.
+
+**Desejável** (entra se a sprint fechar antes): ranking social · artigos (NIP-23) · templates de treino · streak · export do histórico.
+
+**Fora desta entrega** (documentado como evolução futura): mapa de check-in e qualquer localização · rastreio contínuo ao vivo · app publicado em loja · **qualquer IA dentro do produto** · mensagem direta entre usuários · dieta e macros · integração com wearables · vídeo e moderação de vídeo · pagamentos/zaps Lightning.
+
+Detalhes e motivos em [`docs/CONTEXTO.md` §6](docs/CONTEXTO.md#6-escopo).
 
 ## Stack
 
