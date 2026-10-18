@@ -1,0 +1,14 @@
+{
+  "id": "e2551bc0f466eecddf7e7b9cc1432bde5c43774c1909bccb04307d9d1a69d313",
+  "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "created_at": 1760745600,
+  "kind": 1301,
+  "tags": [
+    [
+      "alt",
+      "Treino de musculação registrado no OpenLift: 3 séries, 1.280 kg de volume"
+    ]
+  ],
+  "content": "",
+  "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+}

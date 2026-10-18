@@ -26,7 +26,7 @@ A tabela-resumo vigente fica em [`docs/CONTEXTO.md` §5](../CONTEXTO.md#5-decis�
 3. Status começa como **Proposto**; vira **Aceito** quando o grupo aprova o PR.
 4. Atualize a tabela acima e a §5 do `docs/CONTEXTO.md`.
 
-Para rascunhar com IA, use a skill [`.agents/skills/escrever-adr.md`](../../.agents/skills/escrever-adr.md). O rascunho é revisado por uma pessoa antes do PR.
+Para rascunhar com IA, use a skill [`.agents/skills/escrever-adr/`](../../.agents/skills/escrever-adr/SKILL.md). O rascunho é revisado por uma pessoa antes do PR.
 
 ```markdown
 # ADR-NNNN — Título da decisão
