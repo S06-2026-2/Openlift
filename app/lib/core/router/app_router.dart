@@ -3,6 +3,10 @@
 // Rotas: /login, /signup, /dashboard, /workouts, /workouts/new, /social/feed,
 // /social/compose, /profile.
 //
+// As 4 áreas principais (Início, Treinos, Social, Perfil) ficam dentro da
+// AppShell (navegação inferior/lateral). Formulários e "Compartilhar" abrem em
+// tela cheia, fora da casca.
+//
 // O roteador é um Provider porque o `redirect` depende da sessão
 // (authControllerProvider): sem sessão, só /login e /signup são acessíveis;
 // com sessão, /login e /signup levam ao /dashboard.
@@ -14,9 +18,12 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
+import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workouts/presentation/workout_form_screen.dart';
 import '../../features/workouts/presentation/workout_history_screen.dart';
 import '../../shared/widgets/app_button.dart';
+import '../../shared/widgets/app_shell.dart';
+import '../../shared/widgets/coming_soon_view.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import 'app_routes.dart';
 
@@ -72,143 +79,91 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.signup,
         builder: (context, state) => const SignupScreen(),
       ),
+      // Tela cheia (fora da casca) — declaradas antes de /workouts.
       GoRoute(
-        path: AppRoutes.dashboard,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Dashboard',
-          routeName: AppRoutes.dashboard,
-        ),
+        path: AppRoutes.newWorkout,
+        builder: (context, state) => const WorkoutFormScreen(),
       ),
       GoRoute(
-        path: AppRoutes.workouts,
-        builder: (context, state) => const WorkoutHistoryScreen(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) => const WorkoutFormScreen(),
-          ),
-          GoRoute(
-            path: ':id/edit',
-            redirect: (context, state) =>
-                int.tryParse(state.pathParameters['id'] ?? '') == null
-                    ? AppRoutes.workouts
-                    : null,
-            builder: (context, state) => WorkoutFormScreen(
-              workoutId: int.parse(state.pathParameters['id']!),
-            ),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: AppRoutes.feed,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Feed Social',
-          routeName: AppRoutes.feed,
+        path: '${AppRoutes.workouts}/:id/edit',
+        redirect: (context, state) =>
+            int.tryParse(state.pathParameters['id'] ?? '') == null
+                ? AppRoutes.workouts
+                : null,
+        builder: (context, state) => WorkoutFormScreen(
+          workoutId: int.parse(state.pathParameters['id']!),
         ),
       ),
       GoRoute(
         path: AppRoutes.compose,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Compartilhar',
-          routeName: AppRoutes.compose,
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Compartilhar'),
+            leading: BackButton(onPressed: () => context.go(AppRoutes.feed)),
+          ),
+          body: const ComingSoonView(
+            icon: Icons.ios_share_rounded,
+            title: 'Compartilhar treino',
+            description: 'Publique um treino ou artigo na rede aberta NOSTR. '
+                'Disponível nas próximas versões.',
+          ),
         ),
       ),
-      GoRoute(
-        path: AppRoutes.profile,
-        builder: (context, state) => const _PlaceholderScreen(
-          title: 'Perfil',
-          routeName: AppRoutes.profile,
+      ShellRoute(
+        builder: (context, state, child) => AppShell(
+          location: state.matchedLocation,
+          child: child,
         ),
+        routes: [
+          GoRoute(
+            path: AppRoutes.dashboard,
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.workouts,
+            builder: (context, state) => const WorkoutHistoryScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.feed,
+            builder: (context, state) => Scaffold(
+              appBar: AppBar(title: const Text('Social')),
+              body: const ComingSoonView(
+                icon: Icons.people_outline_rounded,
+                title: 'Feed social em breve',
+                description: 'Treinos de quem você segue, publicados na rede '
+                    'aberta NOSTR, vão aparecer aqui.',
+              ),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.profile,
+            builder: (context, state) => const _ProfilePlaceholder(),
+          ),
+        ],
       ),
     ],
   );
 });
 
-/// Tela placeholder das rotas que ainda não têm implementação real.
-/// Mostra o botão "Sair" para permitir testar logout/sessão de ponta a ponta.
-class _PlaceholderScreen extends ConsumerWidget {
-  const _PlaceholderScreen({
-    required this.title,
-    required this.routeName,
-  });
-
-  final String title;
-  final String routeName;
+/// Perfil ainda sem dados reais: mostra o "em breve" e permite sair da conta.
+class _ProfilePlaceholder extends ConsumerWidget {
+  const _ProfilePlaceholder();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final authenticated = ref.watch(
-      authControllerProvider.select((s) => s.valueOrNull?.isAuthenticated),
-    );
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          if (authenticated == true)
-            IconButton(
-              tooltip: 'Sair',
-              icon: const Icon(Icons.logout_rounded),
-              onPressed: () =>
-                  ref.read(authControllerProvider.notifier).signOut(),
-            ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.fitness_center_rounded,
-                size: 56,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Rota: $routeName',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tela placeholder (implementação real a partir do Sprint 2)',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall,
-              ),
-              if (routeName == AppRoutes.dashboard) ...[
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: 300,
-                  child: AppButton(
-                    label: 'Meus treinos',
-                    icon: Icons.history_rounded,
-                    onPressed: () => context.go(AppRoutes.workouts),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: 300,
-                  child: AppButton(
-                    label: 'Novo treino',
-                    icon: Icons.add_rounded,
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => context.go(AppRoutes.newWorkout),
-                  ),
-                ),
-              ],
-            ],
-          ),
+      appBar: AppBar(title: const Text('Perfil')),
+      body: ComingSoonView(
+        icon: Icons.person_outline_rounded,
+        title: 'Perfil em breve',
+        description: 'Seus dados, sua identidade na rede aberta e as '
+            'preferências do app ficarão aqui.',
+        action: AppButton(
+          label: 'Sair da conta',
+          icon: Icons.logout_rounded,
+          variant: AppButtonVariant.secondary,
+          isFullWidth: false,
+          onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
         ),
       ),
     );
