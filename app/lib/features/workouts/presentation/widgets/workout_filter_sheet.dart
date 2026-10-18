@@ -78,16 +78,11 @@ class _WorkoutFilterSheetState extends State<_WorkoutFilterSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Filtrar treinos',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
+          Text('Filtrar treinos', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: _pickPeriod,
-            icon: const Icon(Icons.date_range_rounded),
+            icon: const Icon(Icons.calendar_today_outlined, size: 16),
             label: Text(_periodLabel),
           ),
           const SizedBox(height: 12),
