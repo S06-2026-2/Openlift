@@ -9,7 +9,7 @@ class LoadingIndicator extends StatelessWidget {
     this.message,
     this.size,
     this.color,
-    this.strokeWidth = 3.0,
+    this.strokeWidth = 2.5,
   });
 
   /// Mensagem opcional de feedback exibida abaixo do indicador.
@@ -59,7 +59,7 @@ class LoadingIndicator extends StatelessWidget {
             message!,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
