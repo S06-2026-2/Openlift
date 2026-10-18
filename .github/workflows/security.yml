@@ -1,0 +1,53 @@
+name: Security
+
+# OPS-02 / RNF-01: procura segredos (chaves, tokens, senhas) com o gitleaks em
+# todo PR e em todo push na main. Configuração e falsos positivos liberados
+# ficam em .gitleaks.toml; como tratar falso positivo está no README.
+#
+# Roda o binário oficial do gitleaks (mesmo motor da gitleaks/gitleaks-action).
+# A action v2 exige licença (GITLEAKS_LICENSE) para repositórios de
+# organização, e este repo pertence à org S06-2026-2.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GITLEAKS_VERSION: 8.21.2
+
+jobs:
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo: o scan olha commits, não só a árvore final
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      # Em PR, escaneia só os commits do PR; no push/manual, o histórico inteiro.
+      - name: Scan commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            gitleaks git --config .gitleaks.toml --redact --verbose \
+              --log-opts="${BASE_SHA}..${HEAD_SHA}" .
+          else
+            gitleaks git --config .gitleaks.toml --redact --verbose .
+          fi
