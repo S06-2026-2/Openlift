@@ -23,6 +23,7 @@ app = FastAPI(
     openapi_tags=[
         {"name": "auth", "description": "Cadastro, login e renovação de sessão (JWT)."},
         {"name": "exercises", "description": "Biblioteca de exercícios por grupo muscular."},
+        {"name": "workouts", "description": "Treinos e séries do usuário logado."},
         {"name": "system", "description": "Saúde e versão da API."},
     ],
 )
