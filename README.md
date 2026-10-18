@@ -46,3 +46,21 @@ Veja `api/.env.example` para as variáveis de ambiente necessárias.
 - **Backend:** FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, Redis
 - **Protocolo social:** NOSTR (NIP-01, NIP-23, NIP-25)
 - **DevOps:** Docker, GitHub Actions, ruff/black/mypy, pytest, flutter_test
+
+## Segurança: segredos no repositório
+
+Todo PR passa por dois checks além do lint e dos testes:
+
+- **Gitleaks** ([`security.yml`](.github/workflows/security.yml)): procura chaves, tokens e senhas nos commits do PR. Se achar, o PR fica vermelho. Isso protege o RNF-01: chave privada (`nsec`) nunca entra no repositório.
+- **Commitlint** ([`commitlint.yml`](.github/workflows/commitlint.yml)): todo commit do PR precisa seguir Conventional Commits (`feat: …`, `fix(api): …`). Uma mensagem como `foo` é rejeitada.
+
+Para rodar o gitleaks antes de abrir o PR, [instale o binário](https://github.com/gitleaks/gitleaks#installing) e rode na raiz: `gitleaks git --config .gitleaks.toml --redact .`
+
+### Se o gitleaks apontar um segredo
+
+1. **É segredo real** (senha, token, chave)? **Não libere.** Considere o segredo vazado, mesmo que o commit seja desfeito: troque-o na origem (gere outro token, troque a senha), remova do código, passe a ler de variável de ambiente (`api/.env`, que está no `.gitignore`) e avise no grupo.
+2. **É falso positivo** (exemplo de documentação, valor de teste, credencial de dev local)? Escolha o menor escopo possível:
+   - **Uma linha:** adicione o comentário `# gitleaks:allow` no fim da linha.
+   - **Um padrão recorrente:** adicione uma regex em `regexes` no [`.gitleaks.toml`](.gitleaks.toml), com um comentário explicando por que é seguro.
+   - **Um arquivo inteiro** (só para arquivos de exemplo, como `api/.env.example`): adicione o caminho em `paths`.
+3. Explique a liberação na descrição do PR, para o revisor conferir.

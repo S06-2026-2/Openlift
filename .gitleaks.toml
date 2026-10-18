@@ -1,0 +1,27 @@
+# Configuração do gitleaks (OPS-02 / RNF-01). Usa todas as regras padrão e
+# só libera o que é comprovadamente falso positivo. Antes de adicionar algo
+# aqui, leia "Segurança: segredos no repositório" no README.md: liberar um
+# segredo real é pior do que não ter o scanner.
+
+title = "OpenLift"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Falsos positivos conhecidos do OpenLift"
+
+# Modelo de variáveis de ambiente: só valores de exemplo ("change-me").
+paths = [
+  '''^api/\.env\.example$''',
+]
+
+regexes = [
+  # Credenciais de desenvolvimento local do docker compose (Postgres
+  # openlift/openlift), que só existem na máquina de quem roda o projeto.
+  '''openlift:openlift@''',
+  '''POSTGRES_PASSWORD:\s*openlift''',
+  # Exemplo de JWT truncado nos schemas do Swagger (api/app/domain/schemas/auth.py):
+  # é só o cabeçalho {"alg":"HS256"...} em base64, seguido de "...".
+  '''eyJhbGciOiJIUzI1NiIs\.\.\.''',
+]
