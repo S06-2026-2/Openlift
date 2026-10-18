@@ -1,7 +1,8 @@
-// Sprint 1 — Botão padrão do design system (variantes: primary, secondary, danger).
+// Botão padrão do design system (variantes: primary, secondary, danger).
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import 'loading_indicator.dart';
 
 /// Variantes visuais suportadas pelo [AppButton].
@@ -21,7 +22,7 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
     this.isFullWidth = true,
-    this.height = 48.0,
+    this.height = 44.0,
   });
 
   /// Texto exibido no botão.
@@ -47,34 +48,24 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final isEnabled = onPressed != null && !isLoading;
-
     final effectiveOnPressed = isEnabled ? onPressed : null;
 
-    final Color loadingColor;
-    switch (variant) {
-      case AppButtonVariant.primary:
-      case AppButtonVariant.danger:
-        loadingColor = Colors.white;
-        break;
-      case AppButtonVariant.secondary:
-        loadingColor = theme.colorScheme.primary;
-        break;
-    }
+    final (Color background, Color foreground) = switch (variant) {
+      AppButtonVariant.primary => (scheme.primary, scheme.onPrimary),
+      AppButtonVariant.danger => (scheme.error, scheme.onError),
+      AppButtonVariant.secondary => (Colors.transparent, scheme.onSurface),
+    };
 
-    Widget content = isLoading
-        ? LoadingIndicator(
-            size: 20,
-            strokeWidth: 2.5,
-            color: loadingColor,
-          )
+    final content = isLoading
+        ? LoadingIndicator(size: 18, strokeWidth: 2, color: foreground)
         : Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 20),
+                Icon(icon, size: 18),
                 const SizedBox(width: 8),
               ],
               Flexible(
@@ -82,81 +73,44 @@ class AppButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
                 ),
               ),
             ],
           );
 
-    final Widget button;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+    );
+    const padding = EdgeInsets.symmetric(horizontal: 16);
 
-    switch (variant) {
-      case AppButtonVariant.primary:
-        button = ElevatedButton(
-          onPressed: effectiveOnPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: theme.colorScheme.primary.withValues(alpha: 0.5),
-            disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    final Widget button = variant == AppButtonVariant.secondary
+        ? OutlinedButton(
+            onPressed: effectiveOnPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: foreground,
+              disabledForegroundColor: scheme.onSurface.withValues(alpha: 0.38),
+              side: BorderSide(color: scheme.outline),
+              padding: padding,
+              shape: shape,
             ),
-          ),
-          child: content,
-        );
-        break;
-
-      case AppButtonVariant.secondary:
-        button = OutlinedButton(
-          onPressed: effectiveOnPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: theme.colorScheme.onSurface,
-            disabledForegroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.38),
-            side: BorderSide(
-              color: isEnabled
-                  ? theme.colorScheme.outline
-                  : theme.colorScheme.outline.withValues(alpha: 0.5),
+            child: content,
+          )
+        : ElevatedButton(
+            onPressed: effectiveOnPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: background,
+              foregroundColor: foreground,
+              disabledBackgroundColor: background.withValues(alpha: 0.4),
+              disabledForegroundColor: foreground.withValues(alpha: 0.8),
+              elevation: 0,
+              padding: padding,
+              shape: shape,
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: content,
-        );
-        break;
-
-      case AppButtonVariant.danger:
-        button = ElevatedButton(
-          onPressed: effectiveOnPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: theme.colorScheme.error,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: theme.colorScheme.error.withValues(alpha: 0.5),
-            disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: content,
-        );
-        break;
-    }
-
-    if (isFullWidth) {
-      return SizedBox(
-        width: double.infinity,
-        height: height,
-        child: button,
-      );
-    }
+            child: content,
+          );
 
     return SizedBox(
+      width: isFullWidth ? double.infinity : null,
       height: height,
       child: button,
     );

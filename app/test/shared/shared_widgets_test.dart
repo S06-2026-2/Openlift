@@ -19,13 +19,14 @@ void main() {
     test('AppTheme.dark configura Material 3 e esquema de cores', () {
       final darkTheme = AppTheme.dark();
       expect(darkTheme.useMaterial3, isTrue);
-      expect(darkTheme.colorScheme.primary, equals(AppTheme.primaryColor));
+      expect(darkTheme.colorScheme.primary, equals(AppTheme.primaryColorDark));
       expect(darkTheme.brightness, equals(Brightness.dark));
     });
   });
 
   group('AppButton', () {
-    testWidgets('renderiza label e dispara onPressed ao ser clicado', (tester) async {
+    testWidgets('renderiza label e dispara onPressed ao ser clicado',
+        (tester) async {
       var clicked = false;
 
       await tester.pumpWidget(
@@ -49,7 +50,9 @@ void main() {
       expect(clicked, isTrue);
     });
 
-    testWidgets('em estado de loading exibe LoadingIndicator e não dispara clique', (tester) async {
+    testWidgets(
+        'em estado de loading exibe LoadingIndicator e não dispara clique',
+        (tester) async {
       var clicked = false;
 
       await tester.pumpWidget(
@@ -162,7 +165,8 @@ void main() {
   });
 
   group('AppTextField — confirmação', () {
-    testWidgets('dispara onFieldSubmitted ao confirmar (Enter)', (tester) async {
+    testWidgets('dispara onFieldSubmitted ao confirmar (Enter)',
+        (tester) async {
       String? submitted;
 
       await tester.pumpWidget(
@@ -187,7 +191,8 @@ void main() {
   });
 
   group('LoadingIndicator', () {
-    testWidgets('renderiza CircularProgressIndicator com e sem mensagem', (tester) async {
+    testWidgets('renderiza CircularProgressIndicator com e sem mensagem',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
