@@ -21,6 +21,8 @@ dependencies:
   # dart_nostr: ^9.0.0   # TODO: destravar versão após spike de compatibilidade
   # Gráficos e heatmap (Sprint 3/5)
   fl_chart: ^0.68.0
+  bip340: ^0.3.1
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
