@@ -10,7 +10,7 @@ A tabela-resumo vigente fica em [`docs/CONTEXTO.md` §5](../CONTEXTO.md#5-decis�
 |---|---|---|
 | [0001](0001-frontend-flutter-web-e-apk.md) | Front-end em Flutter, entregue como web e APK | Aceito |
 | [0002](0002-backend-python-fastapi-postgresql.md) | Back-end em Python, FastAPI e PostgreSQL | Aceito |
-| 0003 | Evento de treino `kind 1301` + mini-NIP | Em escrita em NOSTR-01 (#22) |
+| [0003](0003-evento-de-treino-kind-1301.md) | Evento de treino `kind 1301` + mini-NIP | Aceito |
 | [0004](0004-onde-o-dado-vive.md) | Onde o dado vive: Postgres x relay | Aceito |
 | [0005](0005-identidade-nostr.md) | Identidade NOSTR invisível ao usuário | Aceito |
 | [0006](0006-custodia-da-chave-por-plataforma.md) | Custódia da chave por plataforma | Aceito |
