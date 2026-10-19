@@ -82,7 +82,7 @@ Por que uma tag por série, e não `["set", …]`: é o que o NIP-101e define e 
 O NIP-101e exige início e fim. O OpenLift ainda **não registra horário nem duração** (só a data do treino). Até isso existir (cronômetro, RF-18):
 
 - `start` = `end` = **12:00 do dia do treino no fuso do dispositivo**, em segundos Unix.
-- Meio-dia preserva a data do treino para quem lê em qualquer fuso entre UTC−12 e UTC+12; meia-noite faria o treino "mudar de dia" para leitores a oeste.
+- Meio-dia preserva a data do treino para todo leitor cujo fuso difere menos de 12 h do fuso de quem registrou (todo o Brasil, por exemplo); meia-noite faria o treino "mudar de dia" para qualquer leitor a oeste do autor.
 - Duração zero é a forma honesta de dizer "não medido". Leitores do OpenLift não exibem duração quando `start == end`.
 
 ### 2.5 Tag `alt` (NIP-31)
