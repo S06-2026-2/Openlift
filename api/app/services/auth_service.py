@@ -3,9 +3,8 @@
 - register: e-mail único (comparado em minúsculas) → 409 se duplicado;
 - login: e-mail/senha → par de tokens; erro genérico para não revelar se o
   e-mail existe;
-- refresh: refresh token válido → novo par (access + refresh).
-
-TODO(NOSTR): attach_nostr_identity(db, user, npub) -> NostrIdentity (RF-03).
+- refresh: refresh token válido → novo par (access + refresh);
+- attach_nostr_identity: associa o npub gerado no app ao usuário (RF-03).
 """
 
 from functools import lru_cache
@@ -98,6 +97,41 @@ def get_user_by_subject(db: Session, subject: object) -> User | None:
     except ValueError:
         return None
     return db.get(User, user_id)
+
+
+def attach_nostr_identity(db: Session, user: User, npub: str) -> NostrIdentity:
+    """Registra o npub do usuário (S2-02).
+
+    - mesmo npub de novo → idempotente;
+    - npub diferente → substitui (ADR-0005: outro dispositivo sem importar a
+      chave gera identidade nova);
+    - npub de outra conta → 409.
+    """
+    owner_id = db.scalar(select(NostrIdentity.user_id).where(NostrIdentity.npub == npub))
+    if owner_id is not None and owner_id != user.id:
+        raise _npub_taken()
+
+    identity = db.scalar(select(NostrIdentity).where(NostrIdentity.user_id == user.id))
+    if identity is None:
+        identity = NostrIdentity(user_id=user.id, npub=npub)
+        db.add(identity)
+    elif identity.npub == npub:
+        return identity
+    else:
+        identity.npub = npub
+    try:
+        db.commit()
+    except IntegrityError as exc:  # corrida: o mesmo npub registrado ao mesmo tempo
+        db.rollback()
+        raise _npub_taken() from exc
+    db.refresh(identity)
+    return identity
+
+
+def _npub_taken() -> ApiError:
+    return ApiError(
+        409, "Esta identidade NOSTR já está ligada a outra conta.", "npub_already_registered"
+    )
 
 
 def to_user_out(db: Session, user: User) -> UserOut:
