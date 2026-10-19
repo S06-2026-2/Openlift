@@ -1,0 +1,92 @@
+{
+  "id": "2763ff3b0e19519634b11700b323eb26fe82d5a53f1fe5da307c9b76eb847e93",
+  "pubkey": "3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a",
+  "created_at": 1792445400,
+  "kind": 1301,
+  "tags": [
+    [
+      "d",
+      "9d1f55ca-6a25-4d69-a04f-54fc5d026679"
+    ],
+    [
+      "title",
+      "Treino de 19/10/2026"
+    ],
+    [
+      "type",
+      "strength"
+    ],
+    [
+      "start",
+      "1792422000"
+    ],
+    [
+      "end",
+      "1792422000"
+    ],
+    [
+      "completed",
+      "true"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:9c086100-ba50-5108-bda5-98ea2d1d63c8",
+      "wss://nos.lol",
+      "40",
+      "12",
+      "",
+      "warmup"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:9c086100-ba50-5108-bda5-98ea2d1d63c8",
+      "wss://nos.lol",
+      "80",
+      "8",
+      "7",
+      "normal"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:9c086100-ba50-5108-bda5-98ea2d1d63c8",
+      "wss://nos.lol",
+      "80",
+      "8",
+      "8.5",
+      "normal"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:9c086100-ba50-5108-bda5-98ea2d1d63c8",
+      "wss://nos.lol",
+      "80",
+      "6",
+      "10",
+      "failure"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:06328c6a-abb8-516d-9631-2c2870f0b4d3",
+      "wss://nos.lol",
+      "100",
+      "5",
+      "8",
+      "normal"
+    ],
+    [
+      "exercise",
+      "33401:3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a:06328c6a-abb8-516d-9631-2c2870f0b4d3",
+      "wss://nos.lol",
+      "102.5",
+      "5",
+      "",
+      "normal"
+    ],
+    [
+      "alt",
+      "Registro de treino de 19/10/2026: Supino reto (4 séries), Agachamento livre (2 séries). Volume: 2.772,5 kg."
+    ]
+  ],
+  "content": "",
+  "sig": "1b85ade96c5b66ab492bf2c9eed7ddd397e73a529164e535f60e1fffba8ecc18a091d3ae6f2f23f2416d5849cb0df3f9b0b68b6401cc6e465531589b67332c22"
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "3c3f8aaf073fd8e3687437c9f35b1ffbfde8b02c0766bddea6e93e3192dc5729",
+    "pubkey": "3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a",
+    "created_at": 1792445400,
+    "kind": 33401,
+    "tags": [
+      [
+        "d",
+        "9c086100-ba50-5108-bda5-98ea2d1d63c8"
+      ],
+      [
+        "title",
+        "Supino reto"
+      ],
+      [
+        "format",
+        "weight",
+        "reps",
+        "rpe",
+        "set_type"
+      ],
+      [
+        "format_units",
+        "kg",
+        "count",
+        "0-10",
+        "warmup|normal|drop|failure"
+      ],
+      [
+        "equipment",
+        "barbell"
+      ],
+      [
+        "t",
+        "chest"
+      ],
+      [
+        "alt",
+        "Modelo de exercício (NIP-101e): Supino reto"
+      ]
+    ],
+    "content": "",
+    "sig": "a43587407d75c7ccf82fb5dac35cfc73fafaa812a1139691287e279e580b485e800d37f82a04fe18555dbf88d1d39081d200f949b77d52bc342d26b998ab415c"
+  },
+  {
+    "id": "12a4f70fb0f2cc460d126c96ba1df12194faa2dcd8083e09b80cf45e9224358b",
+    "pubkey": "3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a",
+    "created_at": 1792445400,
+    "kind": 33401,
+    "tags": [
+      [
+        "d",
+        "06328c6a-abb8-516d-9631-2c2870f0b4d3"
+      ],
+      [
+        "title",
+        "Agachamento livre"
+      ],
+      [
+        "format",
+        "weight",
+        "reps",
+        "rpe",
+        "set_type"
+      ],
+      [
+        "format_units",
+        "kg",
+        "count",
+        "0-10",
+        "warmup|normal|drop|failure"
+      ],
+      [
+        "equipment",
+        "barbell"
+      ],
+      [
+        "t",
+        "quadriceps"
+      ],
+      [
+        "alt",
+        "Modelo de exercício (NIP-101e): Agachamento livre"
+      ]
+    ],
+    "content": "",
+    "sig": "7dbdb3e3af630a4d3076b1bb00c5331db16e81b8e24bdc5d9e50e3546ad3f8dd36c8e76cea20ea1098683c492799e3252e1cf8be955aba17af31f4649a26efe1"
+  }
+]
