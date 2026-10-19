@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/S06-2026-2/Openlift/docs/nips/workout-event.schema.json",
+  "title": "OpenLift — registro de treino (kind 1301, NIP-101e)",
+  "description": "Perfil OpenLift do evento kind 1301. Descreve o que o OpenLift EMITE (estrito). Na leitura de eventos de terceiros o OpenLift é tolerante: ver docs/nips/openlift-workout-event.md, seção 'Leitura'.",
+  "type": "object",
+  "required": ["id", "pubkey", "created_at", "kind", "tags", "content", "sig"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "$ref": "#/$defs/hex64" },
+    "pubkey": { "$ref": "#/$defs/hex64" },
+    "created_at": { "type": "integer", "minimum": 0, "maximum": 99999999999 },
+    "kind": { "const": 1301 },
+    "content": { "type": "string" },
+    "sig": { "type": "string", "pattern": "^[0-9a-f]{128}$" },
+    "tags": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "$ref": "#/$defs/dTag" },
+          { "$ref": "#/$defs/titleTag" },
+          { "$ref": "#/$defs/typeTag" },
+          { "$ref": "#/$defs/startTag" },
+          { "$ref": "#/$defs/endTag" },
+          { "$ref": "#/$defs/completedTag" },
+          { "$ref": "#/$defs/exerciseTag" },
+          { "$ref": "#/$defs/altTag" }
+        ]
+      },
+      "allOf": [
+        { "contains": { "$ref": "#/$defs/dTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/titleTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/typeTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/startTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/endTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/completedTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/altTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/exerciseTag" }, "minContains": 1 }
+      ]
+    }
+  },
+  "$defs": {
+    "hex64": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "timestamp": { "type": "string", "pattern": "^(0|[1-9][0-9]{0,10})$" },
+    "dTag": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "d" },
+        { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" }
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "titleTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "title" }, { "type": "string", "minLength": 1, "maxLength": 120 }],
+      "items": false,
+      "minItems": 2
+    },
+    "typeTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "type" }, { "const": "strength" }],
+      "items": false,
+      "minItems": 2
+    },
+    "startTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "start" }, { "$ref": "#/$defs/timestamp" }],
+      "items": false,
+      "minItems": 2
+    },
+    "endTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "end" }, { "$ref": "#/$defs/timestamp" }],
+      "items": false,
+      "minItems": 2
+    },
+    "completedTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "completed" }, { "enum": ["true", "false"] }],
+      "items": false,
+      "minItems": 2
+    },
+    "altTag": {
+      "description": "NIP-31: resumo legível para clientes que não entendem o kind. Obrigatória no OpenLift (ADR-0003).",
+      "type": "array",
+      "prefixItems": [{ "const": "alt" }, { "type": "string", "minLength": 1 }],
+      "items": false,
+      "minItems": 2
+    },
+    "exerciseTag": {
+      "description": "Uma série: [exercise, <33401:pubkey:d>, <relay>, <kg>, <reps>, <rpe>, <set_type>].",
+      "type": "array",
+      "prefixItems": [
+        { "const": "exercise" },
+        {
+          "type": "string",
+          "pattern": "^33401:[0-9a-f]{64}:[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        { "type": "string", "pattern": "^(|wss?://\\S+)$" },
+        {
+          "description": "Carga em kg (RN-09), 0 a 1000 (RN-07), até 2 casas, sem zero à direita.",
+          "type": "string",
+          "pattern": "^(1000|(0|[1-9][0-9]{0,2})(\\.[0-9]?[1-9])?)$"
+        },
+        {
+          "description": "Repetições, 1 a 500 (RN-07).",
+          "type": "string",
+          "pattern": "^(500|[1-4][0-9]{2}|[1-9][0-9]?)$"
+        },
+        {
+          "description": "RPE 1 a 10 com até 1 casa; string vazia quando não registrado.",
+          "type": "string",
+          "pattern": "^(|10|[1-9](\\.[1-9])?)$"
+        },
+        { "enum": ["warmup", "normal", "failure"] }
+      ],
+      "items": false,
+      "minItems": 7
+    }
+  }
+}

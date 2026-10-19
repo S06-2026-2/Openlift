@@ -14,6 +14,10 @@ description = "Falsos positivos conhecidos do OpenLift"
 # Modelo de variáveis de ambiente: só valores de exemplo ("change-me").
 paths = [
   '''^api/\.env\.example$''',
+  # Eventos NOSTR de exemplo do mini-NIP (ADR-0003): só dado público (pubkey,
+  # id, sig), assinados com chave descartável que nunca foi salva. A regra
+  # generic-api-key confunde o campo "pubkey" da NIP-01 com segredo.
+  '''^docs/nips/examples/[^/]+\.json$''',
 ]
 
 regexes = [

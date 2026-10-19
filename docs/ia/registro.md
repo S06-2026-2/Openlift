@@ -13,7 +13,7 @@ Registro de onde e como a IA foi usada no desenvolvimento do OpenLift ([ADR-0008
 | Luiz | Claude Code (Claude Opus 5.5) | PRs #39–#41, #43–#45, #51–#55 e IA-01 |
 | Pedro | Antigravity (Claude Sonnet 5.5) | PR #37 |
 | Rodrigo | ChatGPT | PRs #46 e #49 |
-| Yam | GitHub Copilot Autofix | Trailer `Co-authored-by: Copilot Autofix` em 2 commits do PR #11 |
+| Yam | GitHub Copilot Autofix; Claude Code (Claude Opus 5.5) | Trailer `Co-authored-by: Copilot Autofix` em 2 commits do PR #11; PR do NOSTR-01 (#22) |
 | Matheus | — | Nenhum uso registrado até agora |
 
 **Agente de relatório de CI:** o `ci-report-agent.yml` na `main` coleta os artefatos de lint e testes, e o perfil do agente está em `.github/agents/ci-reporter.agent.md` (formato de agente customizado do GitHub Copilot). A chamada ao modelo ainda não está na `main`: está em teste na branch `feat/copilot-reporter` (issue #20).
@@ -43,6 +43,7 @@ Registro de onde e como a IA foi usada no desenvolvimento do OpenLift ([ADR-0008
 | 17/10/2026 | Luiz | Claude Code (Opus 5.5) | #54 (DOC-01) | ADRs 0001, 0002 e 0004–0010 a partir do `CONTEXTO.md` §5 | Conferiu os ADRs contra a tabela do `CONTEXTO.md` §5 | Algumas "alternativas consideradas" não estavam no CONTEXTO e foram completadas; marcadas para o grupo revisar |
 | 17/10/2026 | Luiz | Claude Code (Opus 5.5) | #55 (QA-01) | Critérios de aceite da Sprint 2 e checklist da Demo 3 | Conferiu os critérios contra a entrega da Sprint 2 no `CONTEXTO.md` §3 | Critérios do `kind 1301` deixados genéricos de propósito: as tags dependem do NOSTR-01 |
 | 17/10/2026 | Luiz | Claude Code (Opus 5.5) | IA-01 (#34) | `AGENTS.md`, skills `criar-endpoint-fastapi`, `gerar-teste-flutter`, `validar-evento-nostr`, `revisar-pr` e `escrever-adr`, e este registro | Conferiu as regras invioláveis do `AGENTS.md` contra os ADRs | Exemplos das skills validados: Python com ruff/black/mypy, Dart com analyze + teste rodando. O registro inicial atribuía Gemini ao reporter sem evidência; corrigido |
+| 19/10/2026 | Yam | Claude Code (Opus 5.5) | NOSTR-01 (#22) | Mini-NIP, JSON Schemas, exemplos assinados e ADR-0003, a partir do texto do NIP-101e (PR nostr-protocol/nips#1816) | Delegou as escolhas de tag ao agente, pedindo a opção mais fiel ao rascunho; a revisão do contrato é a aprovação do PR pelo grupo | O esboço de tags da issue #22 não batia com o NIP-101e; o agente seguiu o rascunho e registrou o descarte no ADR. Exemplos assinados com chave descartável e conferidos por uma implementação independente (referência BIP-340 em Python) e por 15 casos negativos contra o schema |
 
 ## Lições até agora
 
