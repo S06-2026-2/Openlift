@@ -37,7 +37,7 @@ Fatos que restringem a decisão:
 - **Referência de exercício sem publicar o `33401`** (endereço "pendurado", só com o slug) — menos eventos, mas a referência não resolve em lugar nenhum e clientes de terceiros não conseguem mostrar o nome do exercício.
 - **`33401` publicados por uma chave da plataforma** — uma biblioteca única para todos, mas exige que o backend tenha e use uma chave privada, o que contraria o ADR-0006 e cria um alvo de alto valor.
 - **`d` do exercício como slug legível** (`supino-reto`) — mais simples, mas o NIP-101e pede UUID; o UUIDv5 do slug mantém o determinismo e respeita o rascunho.
-- **`start`/`end` a partir do `created_at` do registro** — parece mais "real", mas mente quando o treino é registrado depois do dia em que aconteceu; meio-dia da data é honesto e preserva o dia em qualquer fuso.
+- **`start`/`end` a partir do `created_at` do registro** — parece mais "real", mas mente quando o treino é registrado depois do dia em que aconteceu; meio-dia da data é honesto e preserva o dia para leitores a menos de 12 h de fuso do autor.
 
 ## Consequências
 
