@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/S06-2026-2/Openlift/docs/nips/exercise-template.schema.json",
+  "title": "OpenLift — modelo de exercício (kind 33401, NIP-101e)",
+  "description": "Perfil OpenLift do evento kind 33401, referenciado pelas tags exercise do kind 1301. Descreve o que o OpenLift EMITE.",
+  "type": "object",
+  "required": ["id", "pubkey", "created_at", "kind", "tags", "content", "sig"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "$ref": "#/$defs/hex64" },
+    "pubkey": { "$ref": "#/$defs/hex64" },
+    "created_at": { "type": "integer", "minimum": 0, "maximum": 99999999999 },
+    "kind": { "const": 33401 },
+    "content": { "type": "string" },
+    "sig": { "type": "string", "pattern": "^[0-9a-f]{128}$" },
+    "tags": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "$ref": "#/$defs/dTag" },
+          { "$ref": "#/$defs/titleTag" },
+          { "$ref": "#/$defs/formatTag" },
+          { "$ref": "#/$defs/formatUnitsTag" },
+          { "$ref": "#/$defs/equipmentTag" },
+          { "$ref": "#/$defs/tTag" },
+          { "$ref": "#/$defs/altTag" }
+        ]
+      },
+      "allOf": [
+        { "contains": { "$ref": "#/$defs/dTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/titleTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/formatTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/formatUnitsTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/equipmentTag" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "$ref": "#/$defs/altTag" }, "minContains": 1, "maxContains": 1 }
+      ]
+    }
+  },
+  "$defs": {
+    "hex64": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "dTag": {
+      "description": "UUIDv5 do slug do exercício no namespace OpenLift (estável entre dispositivos).",
+      "type": "array",
+      "prefixItems": [
+        { "const": "d" },
+        { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" }
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "titleTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "title" }, { "type": "string", "minLength": 1, "maxLength": 120 }],
+      "items": false,
+      "minItems": 2
+    },
+    "formatTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "format" }, { "const": "weight" }, { "const": "reps" }, { "const": "rpe" }, { "const": "set_type" }],
+      "items": false,
+      "minItems": 5
+    },
+    "formatUnitsTag": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "format_units" },
+        { "const": "kg" },
+        { "const": "count" },
+        { "const": "0-10" },
+        { "const": "warmup|normal|drop|failure" }
+      ],
+      "items": false,
+      "minItems": 5
+    },
+    "equipmentTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "equipment" }, { "enum": ["barbell", "dumbbell", "bodyweight", "machine", "cardio"] }],
+      "items": false,
+      "minItems": 2
+    },
+    "tTag": {
+      "description": "Grupo muscular no vocabulário fixo do mini-NIP.",
+      "type": "array",
+      "prefixItems": [
+        { "const": "t" },
+        {
+          "enum": ["chest", "back", "shoulders", "biceps", "triceps", "quadriceps", "hamstrings", "glutes", "calves", "abs"]
+        }
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "altTag": {
+      "type": "array",
+      "prefixItems": [{ "const": "alt" }, { "type": "string", "minLength": 1 }],
+      "items": false,
+      "minItems": 2
+    }
+  }
+}
