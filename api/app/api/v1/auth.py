@@ -5,7 +5,7 @@ POST /auth/register  — cria usuário (e-mail + senha)          → 201 | 409 |
 POST /auth/login     — autentica e devolve access/refresh     → 200 | 401 | 422
 POST /auth/refresh   — troca o refresh token por um novo par  → 200 | 401 | 422
 
-TODO(NOSTR): POST /me/nostr-identity — registra o npub gerado no app (RF-03).
+O registro do npub (RF-03) fica em app/api/v1/me.py.
 """
 
 from fastapi import APIRouter, status

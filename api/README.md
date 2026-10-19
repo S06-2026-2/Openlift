@@ -64,6 +64,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | POST | `/auth/register` | Cadastro (201; e-mail duplicado → 409) |
 | POST | `/auth/login` | Login (par de tokens; senha errada → 401) |
 | POST | `/auth/refresh` | Troca o refresh token por um novo par |
+| POST | `/me/nostr-identity` | Registra o `npub` gerado no app (só chave pública; idempotente; `npub` de outra conta → 409) |
 | GET | `/exercises` | Biblioteca com grupo muscular (`?muscle_group_id=`) |
 | POST / GET | `/workouts` | Cria treino / histórico paginado (`date_from`, `date_to`, `exercise_id`, `muscle_group_id`, `limit`, `offset`) |
 | GET / PATCH / DELETE | `/workouts/{id}` | Detalha, edita (`sets` enviado substitui todas as séries) e exclui |

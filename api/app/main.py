@@ -22,6 +22,7 @@ app = FastAPI(
     "Use **Authorize** com o `access_token` do `/api/v1/auth/login` para as rotas protegidas.",
     openapi_tags=[
         {"name": "auth", "description": "Cadastro, login e renovação de sessão (JWT)."},
+        {"name": "me", "description": "Dados do usuário logado, como a identidade NOSTR."},
         {"name": "exercises", "description": "Biblioteca de exercícios por grupo muscular."},
         {"name": "workouts", "description": "Treinos e séries do usuário logado."},
         {"name": "system", "description": "Saúde e versão da API."},
