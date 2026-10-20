@@ -1,4 +1,4 @@
-"""Schemas Pydantic v2 de autenticação e registro de identidade NOSTR.
+"""Schemas Pydantic v2 de autenticação.
 
 Usados por app/api/v1/auth.py (BE-02). Os exemplos aparecem no Swagger (/docs).
 """
@@ -47,13 +47,3 @@ class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-
-
-class NostrIdentityIn(BaseModel):
-    """Corpo de POST /me/nostr-identity.
-
-    Só a chave PÚBLICA (npub), gerada e guardada localmente pelo app — o
-    nsec nunca chega ao backend (ver implementation.md, seção de arquitetura).
-    """
-
-    npub: str = Field(min_length=1, description="Chave pública NOSTR (npub) gerada no dispositivo")
