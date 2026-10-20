@@ -1,0 +1,33 @@
+
+reviews:
+  path_instructions:
+    - path: ".github/workflows/**"
+      instructions: |
+        Revise os workflows de CI/CD do OpenLift.
+
+        Verifique:
+        - Se falhas de lint e testes propagam exit codes corretos.
+        - Se os artefatos são enviados mesmo quando um teste falha.
+        - Se os nomes dos artefatos são consistentes.
+        - Se os relatórios possuem dados suficientes para diagnosticar falhas.
+        - Se existem permissões excessivas no GITHUB_TOKEN.
+        - Se o CD pode publicar imagens sem aprovação do CI.
+
+        Artefatos esperados:
+        - backend-lint-results
+        - backend-test-results
+        - frontend-analysis-results
+        - frontend-test-results
+
+        Não considere um teste aprovado apenas porque um
+        artefato foi gerado.
+
+    - path: ".github/agents/**"
+      instructions: |
+        Verifique se os agentes usam evidências reais da pipeline.
+        Não permita que relatórios inventem resultados ausentes.
+
+    - path: ".github/skills/**"
+      instructions: |
+        Verifique se as Skills descrevem corretamente os
+        artefatos, os critérios de aprovação e os erros.
