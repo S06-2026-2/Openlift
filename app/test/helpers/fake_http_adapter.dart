@@ -78,6 +78,21 @@ class MemorySecureStorage extends SecureStorageService {
 
   @override
   Future<void> clearSession() async {
-    _values.clear();
+    // Igual ao real: o logout apaga só a sessão, não a chave NOSTR.
+    _values
+      ..remove(SecureStorageService.accessTokenKey)
+      ..remove(SecureStorageService.refreshTokenKey);
   }
+
+  @override
+  Future<void> saveNostrSecret(int userId, String secretHex) async {
+    _values[SecureStorageService.nostrSecretKey(userId)] = secretHex;
+  }
+
+  @override
+  Future<String?> readNostrSecret(int userId) async =>
+      _values[SecureStorageService.nostrSecretKey(userId)];
+
+  /// Tudo o que está guardado (para os testes de RNF-01 procurarem vazamento).
+  Map<String, String> get values => Map.unmodifiable(_values);
 }
