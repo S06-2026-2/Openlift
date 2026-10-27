@@ -1,6 +1,16 @@
+
 name: CI Report Agent
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci-report-agent.yml"
+      - ".github/agents/ci-reporter.agent.md"
+      - ".github/skills/ci-report/SKILL.md"
+      - ".github/scripts/ci_report_agent.py"
+
   workflow_run:
     workflows:
       - Backend CI
@@ -14,13 +24,15 @@ permissions:
 
 jobs:
   collect:
-    name: Collect CI Results
+    if: github.event_name == 'workflow_run'
+    name: Collect and Analyze CI Results
     runs-on: ubuntu-latest
 
     steps:
-      # ---------------------------------------------------------
-      # Find Backend and Frontend CI executions for the same SHA
-      # ---------------------------------------------------------
+      - name: Checkout trusted default branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Find Backend and Frontend runs
         id: runs
@@ -28,83 +40,69 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
         run: |
-            echo "Looking for CI runs for commit: $HEAD_SHA"
-            echo "Repository: $GH_REPO"
+          set -euo pipefail
 
-            BACKEND_RUN=$(gh run list \
-              --repo "$GH_REPO" \
-              --workflow backend-ci.yml \
-              --commit "$HEAD_SHA" \
-              --json databaseId,status,conclusion \
-              --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+          echo "Looking for CI runs for commit: $HEAD_SHA"
 
-            FRONTEND_RUN=$(gh run list \
-              --repo "$GH_REPO" \
-              --workflow frontend-ci.yml \
-              --commit "$HEAD_SHA" \
-              --json databaseId,status,conclusion \
-              --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
+          BACKEND_RUN=$(gh run list \
+            --repo "$GH_REPO" \
+            --workflow backend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --limit 100 \
+            --json databaseId,status,conclusion \
+            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
 
-            BACKEND_CONCLUSION=$(gh run list \
-              --repo "$GH_REPO" \
-              --workflow backend-ci.yml \
-              --commit "$HEAD_SHA" \
-              --json status,conclusion \
-              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
+          FRONTEND_RUN=$(gh run list \
+            --repo "$GH_REPO" \
+            --workflow frontend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --limit 100 \
+            --json databaseId,status,conclusion \
+            --jq '[.[] | select(.status == "completed")][0].databaseId // empty')
 
-            FRONTEND_CONCLUSION=$(gh run list \
-              --repo "$GH_REPO" \
-              --workflow frontend-ci.yml \
-              --commit "$HEAD_SHA" \
-              --json status,conclusion \
-              --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
+          BACKEND_CONCLUSION=$(gh run list \
+            --repo "$GH_REPO" \
+            --workflow backend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --limit 100 \
+            --json status,conclusion \
+            --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-            echo "Backend Run: $BACKEND_RUN"
-            echo "Backend Conclusion: $BACKEND_CONCLUSION"
+          FRONTEND_CONCLUSION=$(gh run list \
+            --repo "$GH_REPO" \
+            --workflow frontend-ci.yml \
+            --commit "$HEAD_SHA" \
+            --limit 100 \
+            --json status,conclusion \
+            --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-            echo "Frontend Run: $FRONTEND_RUN"
-            echo "Frontend Conclusion: $FRONTEND_CONCLUSION"
+          echo "Backend Run: $BACKEND_RUN ($BACKEND_CONCLUSION)"
+          echo "Frontend Run: $FRONTEND_RUN ($FRONTEND_CONCLUSION)"
 
-            echo "backend_run=$BACKEND_RUN" >> "$GITHUB_OUTPUT"
-            echo "frontend_run=$FRONTEND_RUN" >> "$GITHUB_OUTPUT"
+          {
+            echo "backend_run=$BACKEND_RUN"
+            echo "frontend_run=$FRONTEND_RUN"
+            echo "backend_conclusion=$BACKEND_CONCLUSION"
+            echo "frontend_conclusion=$FRONTEND_CONCLUSION"
+          } >> "$GITHUB_OUTPUT"
 
-            echo "backend_conclusion=$BACKEND_CONCLUSION" >> "$GITHUB_OUTPUT"
-            echo "frontend_conclusion=$FRONTEND_CONCLUSION" >> "$GITHUB_OUTPUT"
-
-            if [ -n "$BACKEND_RUN" ] && [ -n "$FRONTEND_RUN" ]; then
-              echo "ready=true" >> "$GITHUB_OUTPUT"
-              echo "Both CI workflows are completed."
-            else
-              echo "ready=false" >> "$GITHUB_OUTPUT"
-              echo "Both CI workflows have not completed yet."
-            fi
-
-      # ---------------------------------------------------------
-      # If only one CI has completed, this Reporter stops here.
-      # workflow_run will trigger the Reporter again when the
-      # other CI workflow completes.
-      # ---------------------------------------------------------
+          if [[ -n "$BACKEND_RUN" && -n "$FRONTEND_RUN" ]]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: CI results not ready
         if: steps.runs.outputs.ready != 'true'
         run: |
-          echo "Backend CI and Frontend CI have not both completed yet."
-          echo "The Reporter will run again when the other workflow completes."
-
-      # ---------------------------------------------------------
-      # Prepare directories
-      # ---------------------------------------------------------
+          echo "Both CI workflows have not completed yet."
+          echo "Waiting for the next workflow_run event."
 
       - name: Create input directories
         if: steps.runs.outputs.ready == 'true'
-        run: |
-          mkdir -p ci-input/backend
-          mkdir -p ci-input/frontend
-
-      # ---------------------------------------------------------
-      # Download Backend artifacts
-      # ---------------------------------------------------------
+        run: mkdir -p ci-input/backend ci-input/frontend
 
       - name: Download Backend artifacts
         if: steps.runs.outputs.ready == 'true'
@@ -113,16 +111,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
           BACKEND_RUN: ${{ steps.runs.outputs.backend_run }}
         run: |
-          echo "Downloading Backend artifacts from run:"
-          echo "$BACKEND_RUN"
-
           gh run download "$BACKEND_RUN" \
             --repo "$GH_REPO" \
             --dir ci-input/backend
-
-      # ---------------------------------------------------------
-      # Download Frontend artifacts
-      # ---------------------------------------------------------
 
       - name: Download Frontend artifacts
         if: steps.runs.outputs.ready == 'true'
@@ -131,104 +122,55 @@ jobs:
           GH_REPO: ${{ github.repository }}
           FRONTEND_RUN: ${{ steps.runs.outputs.frontend_run }}
         run: |
-          echo "Downloading Frontend artifacts from run:"
-          echo "$FRONTEND_RUN"
-
           gh run download "$FRONTEND_RUN" \
             --repo "$GH_REPO" \
             --dir ci-input/frontend
 
-      # ---------------------------------------------------------
-      # Display downloaded files
-      # ---------------------------------------------------------
-
       - name: Show collected CI artifacts
         if: steps.runs.outputs.ready == 'true'
-        run: |
-          echo "========================================"
-          echo "BACKEND ARTIFACTS"
-          echo "========================================"
+        run: find ci-input -type f -print
 
-          find ci-input/backend -type f -print
-
-          echo ""
-          echo "========================================"
-          echo "FRONTEND ARTIFACTS"
-          echo "========================================"
-
-          find ci-input/frontend -type f -print
-
-      # ---------------------------------------------------------
-      # Verify expected artifacts
-      # ---------------------------------------------------------
-
-      - name: Verify Backend artifacts
+      - name: Verify expected artifacts
         if: steps.runs.outputs.ready == 'true'
         run: |
-          echo "Checking Backend artifacts..."
-
           test -d ci-input/backend/backend-lint-results
           test -d ci-input/backend/backend-test-results
-
-          echo "Backend artifacts verified."
-
-      - name: Verify Frontend artifacts
-        if: steps.runs.outputs.ready == 'true'
-        run: |
-          echo "Checking Frontend artifacts..."
-
           test -d ci-input/frontend/frontend-analysis-results
           test -d ci-input/frontend/frontend-test-results
 
-          echo "Frontend artifacts verified."
-
-      # ---------------------------------------------------------
-      # Store information about the CI executions.
-      # Later this file will also be consumed by the AI agent.
-      # ---------------------------------------------------------
-
       - name: Create CI metadata
         if: steps.runs.outputs.ready == 'true'
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          BACKEND_RUN: ${{ steps.runs.outputs.backend_run }}
+          FRONTEND_RUN: ${{ steps.runs.outputs.frontend_run }}
+          BACKEND_CONCLUSION: ${{ steps.runs.outputs.backend_conclusion }}
+          FRONTEND_CONCLUSION: ${{ steps.runs.outputs.frontend_conclusion }}
         run: |
-          mkdir -p ci-input
-          cat > ci-input/metadata.txt <<EOF
-          OpenLift CI Results
-          ===================
+          python - <<'PY'
+          import os
+          from pathlib import Path
 
-          Commit:
-          ${{ github.event.workflow_run.head_sha }}
+          fields = [
+              "HEAD_SHA",
+              "HEAD_BRANCH",
+              "BACKEND_RUN",
+              "BACKEND_CONCLUSION",
+              "FRONTEND_RUN",
+              "FRONTEND_CONCLUSION",
+          ]
 
-          Branch:
-          ${{ github.event.workflow_run.head_branch }}
+          content = "OpenLift CI Results\n"
 
-          Backend Run ID:
-          ${{ steps.runs.outputs.backend_run }}
+          for name in fields:
+              content += f"{name}: {os.environ[name]}\n"
 
-          Backend Conclusion:
-          ${{ steps.runs.outputs.backend_conclusion }}
-
-          Frontend Run ID:
-          ${{ steps.runs.outputs.frontend_run }}
-
-          Frontend Conclusion:
-          ${{ steps.runs.outputs.frontend_conclusion }}
-          EOF
-
-      - name: Show CI metadata
-        if: steps.runs.outputs.ready == 'true'
-        run: |
-          echo "========================================"
-          echo "CI METADATA"
-          echo "========================================"
-
-          cat ci-input/metadata.txt
-
-      # ---------------------------------------------------------
-      # Temporary artifact used to validate the integration.
-      #
-      # Later this same directory will be provided to the
-      # CI Reporter AI agent.
-      # ---------------------------------------------------------
+          Path("ci-input/metadata.txt").write_text(
+              content,
+              encoding="utf-8",
+          )
+          PY
 
       - name: Upload collected CI results
         if: steps.runs.outputs.ready == 'true'
@@ -236,4 +178,99 @@ jobs:
         with:
           name: collected-ci-results
           path: ci-input/
+          if-no-files-found: error
+
+      - name: Generate Gemini CI report
+        id: agent
+        if: steps.runs.outputs.ready == 'true'
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/ci_report_agent.py
+
+      - name: Publish report to job summary
+        if: steps.runs.outputs.ready == 'true'
+        shell: bash
+        run: |
+          if [[ -f CI_REPORT.md ]]; then
+            cat CI_REPORT.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## CI Report Agent' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Gemini report unavailable. Check the agent step.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Gemini CI report
+        if: steps.runs.outputs.ready == 'true' && steps.agent.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-ci-report
+          path: CI_REPORT.md
+          if-no-files-found: error
+
+  pr-test:
+    name: Test Gemini Agent on PR
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Create sample CI artifacts
+        shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p ci-input/backend/backend-lint-results
+          mkdir -p ci-input/backend/backend-test-results
+          mkdir -p ci-input/frontend/frontend-analysis-results
+          mkdir -p ci-input/frontend/frontend-test-results
+
+          printf 'Ruff: PASS\nBlack: PASS\nMyPy: PASS\n' \
+            > ci-input/backend/backend-lint-results/summary.txt
+
+          printf 'Pytest: 12 passed, 0 failed (SAMPLE DATA)\n' \
+            > ci-input/backend/backend-test-results/summary.txt
+
+          printf 'Flutter analyze: PASS (SAMPLE DATA)\n' \
+            > ci-input/frontend/frontend-analysis-results/summary.txt
+
+          printf 'Flutter tests: PASS (SAMPLE DATA)\n' \
+            > ci-input/frontend/frontend-test-results/summary.txt
+
+          printf \
+            'PR test using synthetic artifacts. NOT real CI results.\nCommit: %s\n' \
+            "$HEAD_SHA" > ci-input/metadata.txt
+
+      - name: Generate Gemini test report
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/ci_report_agent.py
+
+      - name: Publish report summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f CI_REPORT.md ]]; then
+            {
+              echo '> Teste com artefatos simulados; não representa o CI real.'
+              echo ''
+              cat CI_REPORT.md
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Gemini did not generate CI_REPORT.md.' \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-pr-test-report
+          path: CI_REPORT.md
           if-no-files-found: error
