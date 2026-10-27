@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
+from app.core.nostr import npub_to_hex
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -106,19 +107,23 @@ def attach_nostr_identity(db: Session, user: User, npub: str) -> NostrIdentity:
     - npub diferente → substitui (ADR-0005: outro dispositivo sem importar a
       chave gera identidade nova);
     - npub de outra conta → 409.
+
+    `pubkey_hex` é sempre derivado do npub aqui, nunca recebido do cliente.
     """
+    pubkey_hex = npub_to_hex(npub)
     owner_id = db.scalar(select(NostrIdentity.user_id).where(NostrIdentity.npub == npub))
     if owner_id is not None and owner_id != user.id:
         raise _npub_taken()
 
     identity = db.scalar(select(NostrIdentity).where(NostrIdentity.user_id == user.id))
     if identity is None:
-        identity = NostrIdentity(user_id=user.id, npub=npub)
+        identity = NostrIdentity(user_id=user.id, npub=npub, pubkey_hex=pubkey_hex)
         db.add(identity)
     elif identity.npub == npub:
         return identity
     else:
         identity.npub = npub
+        identity.pubkey_hex = pubkey_hex
     try:
         db.commit()
     except IntegrityError as exc:  # corrida: o mesmo npub registrado ao mesmo tempo

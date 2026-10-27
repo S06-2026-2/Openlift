@@ -28,6 +28,10 @@ def _identities(db: Session) -> int:
     return db.scalar(select(func.count()).select_from(NostrIdentity)) or 0
 
 
+def _pubkey_hex(db: Session, user: User) -> str | None:
+    return db.scalar(select(NostrIdentity.pubkey_hex).where(NostrIdentity.user_id == user.id))
+
+
 # ---------------------------------------------------------------------------
 # NIP-19 (bech32)
 # ---------------------------------------------------------------------------
@@ -81,6 +85,27 @@ def test_registra_npub_e_devolve_user_out(
     assert body["id"] == auth_user.id
     assert body["email"] == auth_user.email
     assert _identities(db_session) == 1
+    assert _pubkey_hex(db_session, auth_user) == NIP19_HEX
+
+
+def test_pubkey_hex_nao_aparece_na_resposta(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    response = client.post(URL, json={"npub": NIP19_NPUB}, headers=auth_headers)
+
+    assert "pubkey_hex" not in response.json()
+
+
+def test_pubkey_hex_enviado_pelo_cliente_e_recusado(
+    client: TestClient, auth_headers: dict[str, str], db_session: Session
+) -> None:
+    """O hex é derivado no servidor; o corpo continua aceitando só `npub`."""
+    response = client.post(
+        URL, json={"npub": NIP19_NPUB, "pubkey_hex": OTHER_HEX}, headers=auth_headers
+    )
+
+    assert response.status_code == 422
+    assert _identities(db_session) == 0
 
 
 def test_repetir_o_mesmo_npub_e_idempotente(
@@ -95,7 +120,7 @@ def test_repetir_o_mesmo_npub_e_idempotente(
 
 
 def test_npub_novo_do_mesmo_usuario_substitui(
-    client: TestClient, auth_headers: dict[str, str], db_session: Session
+    client: TestClient, auth_headers: dict[str, str], auth_user: User, db_session: Session
 ) -> None:
     """ADR-0005: trocar de dispositivo sem importar a chave gera identidade nova."""
     other = hex_to_npub(OTHER_HEX)
@@ -106,6 +131,8 @@ def test_npub_novo_do_mesmo_usuario_substitui(
     assert response.status_code == 200
     assert response.json()["npub"] == other
     assert _identities(db_session) == 1
+    db_session.expire_all()
+    assert _pubkey_hex(db_session, auth_user) == OTHER_HEX
 
 
 def test_npub_de_outra_conta_e_409(

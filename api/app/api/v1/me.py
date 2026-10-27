@@ -1,6 +1,7 @@
 """Endpoints do usuário logado. Rotas finas: a regra fica em
 app/services/auth_service.py.
 
+GET  /me                — usuário logado, com o npub (se houver)  → 200 | 401
 POST /me/nostr-identity — registra o npub gerado no app (RF-03) → 200 | 401 | 409 | 422
 """
 
@@ -13,6 +14,18 @@ from app.domain.schemas.user import UserOut
 from app.services import auth_service
 
 router = APIRouter()
+
+
+@router.get(
+    "",
+    response_model=UserOut,
+    summary="Usuário logado",
+    description="Devolve o usuário dono do access token, com o `npub` registrado "
+    "(ou `null`, se ainda não houver identidade NOSTR).",
+    responses=error_responses({401: "Autenticação necessária"}, validation=False),
+)
+def get_me(user: CurrentUser, db: DbSession) -> UserOut:
+    return auth_service.to_user_out(db, user)
 
 
 @router.post(
