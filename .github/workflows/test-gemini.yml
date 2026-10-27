@@ -1,0 +1,127 @@
+
+name: Test Gemini API
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/gemini-agent
+    paths:
+      - ".github/workflows/test-gemini.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test-gemini:
+    name: Test Gemini Generation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test available models
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          key = os.environ.get("GEMINI_API_KEY")
+
+          if not key:
+              raise SystemExit("GEMINI_API_KEY não configurada")
+
+          models = [
+              "gemini-2.5-flash-lite",
+              "gemini-2.5-flash",
+              "gemini-3.1-flash-lite",
+          ]
+
+          payload = {
+              "contents": [{
+                  "parts": [{
+                      "text": "Responda apenas: OpenLift OK"
+                  }]
+              }],
+              "generationConfig": {
+                  "maxOutputTokens": 256
+              }
+          }
+
+          for model in models:
+              print(f"\n=== Testando {model} ===", flush=True)
+
+              url = (
+                  "https://generativelanguage.googleapis.com/"
+                  f"v1beta/models/{model}:generateContent"
+              )
+
+              request = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "x-goog-api-key": key,
+                      "Content-Type": "application/json",
+                  },
+                  method="POST",
+              )
+
+              try:
+                  with urllib.request.urlopen(
+                      request, timeout=45
+                  ) as response:
+                      data = json.load(response)
+
+                  parts = (
+                      data["candidates"][0]
+                      ["content"]["parts"]
+                  )
+
+                  answer = "".join(
+                      part.get("text", "")
+                      for part in parts
+                  )
+
+                  if not answer.strip():
+                      print("Resposta vazia.")
+                      continue
+
+                  print(f"SUCESSO: {model}")
+                  print(f"Resposta: {answer}")
+
+                  with open(
+                      os.environ["GITHUB_STEP_SUMMARY"],
+                      "a",
+                      encoding="utf-8",
+                  ) as summary:
+                      summary.write(
+                          f"## Gemini API\n\n"
+                          f"**Modelo:** `{model}`\n\n"
+                          f"**Resposta:** {answer}\n"
+                      )
+
+                  break
+
+              except urllib.error.HTTPError as error:
+                  print(f"HTTP {error.code}")
+                  print(
+                      error.read().decode(
+                          "utf-8", errors="replace"
+                      )[:1500]
+                  )
+
+              except (
+                  urllib.error.URLError,
+                  KeyError,
+                  IndexError,
+              ) as error:
+                  print(f"Falha: {error}")
+
+          else:
+              raise SystemExit(
+                  "Nenhum dos modelos respondeu com sucesso."
+              )
+          PY
