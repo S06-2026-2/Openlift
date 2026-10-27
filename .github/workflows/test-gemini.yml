@@ -1,0 +1,95 @@
+
+name: Test Gemini API
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/gemini-agent
+    paths:
+      - ".github/workflows/test-gemini.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test-gemini:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test Gemini API
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          key = os.environ.get("GEMINI_API_KEY")
+          if not key:
+              raise SystemExit("GEMINI_API_KEY não configurada")
+
+          url = (
+              "https://generativelanguage.googleapis.com/v1beta/"
+              "models/gemini-2.5-flash-lite:generateContent"
+          )
+
+          payload = {
+              "contents": [{
+                  "parts": [{
+                      "text": (
+                          "Responda somente: "
+                          "OpenLift Gemini Agent funcionando."
+                      )
+                  }]
+              }],
+              "generationConfig": {
+                  "maxOutputTokens": 100
+              }
+          }
+
+          for attempt in range(1, 4):
+              request = urllib.request.Request(
+                  url,
+                  data=json.dumps(payload).encode("utf-8"),
+                  headers={
+                      "x-goog-api-key": key,
+                      "Content-Type": "application/json",
+                  },
+                  method="POST",
+              )
+
+              try:
+                  with urllib.request.urlopen(
+                      request, timeout=45
+                  ) as response:
+                      data = json.load(response)
+
+                  parts = data["candidates"][0]["content"]["parts"]
+                  print("Resposta do Gemini:")
+                  print("".join(
+                      part.get("text", "") for part in parts
+                  ))
+                  break
+
+              except urllib.error.HTTPError as error:
+                  print(
+                      f"Tentativa {attempt}: HTTP {error.code}"
+                  )
+
+                  if error.code not in (429, 500, 502, 503, 504):
+                      raise SystemExit(
+                          "Falha não recuperável na API"
+                      )
+
+                  if attempt == 3:
+                      raise SystemExit(
+                          "Gemini indisponível após 3 tentativas"
+                      )
+
+                  time.sleep(10 * attempt)
+          PY
