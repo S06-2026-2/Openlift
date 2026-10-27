@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: write
 
 jobs:
   collect:
@@ -273,3 +274,52 @@ jobs:
           name: gemini-ci-report
           path: CI_REPORT.md
           if-no-files-found: error
+      
+
+      - name: Publish Gemini report on PR
+        if: steps.runs.outputs.ready == 'true' && steps.agent.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PR_NUMBER=$(gh api \
+            "repos/$GH_REPO/commits/$HEAD_SHA/pulls" \
+            --jq '[.[] | select(.state == "open")][0].number // empty')
+
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "No open PR found for commit $HEAD_SHA."
+            exit 0
+          fi
+
+          echo "Publishing report to PR #$PR_NUMBER"
+
+          python - <<'PY'
+          from pathlib import Path
+
+          report = Path("CI_REPORT.md").read_text(
+              encoding="utf-8"
+          )
+
+          marker = "<!-- openlift-ci-reporter -->"
+
+          content = (
+              marker
+              + "\n"
+              + report
+          )
+
+          Path("pr-comment.md").write_text(
+              content[:60000],
+              encoding="utf-8"
+          )
+          PY
+
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --body-file pr-comment.md \
+            --edit-last --create-if-none
+
