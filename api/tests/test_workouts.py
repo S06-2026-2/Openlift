@@ -1,5 +1,5 @@
 """BE-04 — CRUD de treinos e séries: isolamento por usuário, limites RN-07,
-filtros, paginação e rotas de série."""
+RN-01 (publicado sem séries), filtros, paginação e rotas de série."""
 
 from typing import Any
 
@@ -476,6 +476,72 @@ def test_set_from_another_workout_returns_404(
 
     assert response.status_code == 404
     assert response.json()["code"] == "set_not_found"
+
+
+# ---------------------------------------------------------------------------
+# RN-01 — treino publicado precisa de ao menos uma série
+# ---------------------------------------------------------------------------
+
+RN01_ERROR = {
+    "detail": "Treino publicado precisa ter ao menos uma série.",
+    "code": "published_workout_without_sets",
+}
+
+
+def test_rn01_create_published_without_sets_returns_422(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    response = _create(client, auth_headers, sets=[], visibility="published")
+
+    assert response.status_code == 422
+    assert response.json() == RN01_ERROR
+    assert client.get(WORKOUTS, headers=auth_headers).json()["total"] == 0
+
+
+def test_rn01_patch_to_published_without_sets_returns_422(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    created = _create(client, auth_headers, sets=[]).json()
+
+    response = client.patch(
+        f"{WORKOUTS}/{created['id']}", json={"visibility": "published"}, headers=auth_headers
+    )
+
+    assert response.status_code == 422
+    assert response.json() == RN01_ERROR
+    detail = client.get(f"{WORKOUTS}/{created['id']}", headers=auth_headers).json()
+    assert detail["visibility"] == "private"
+
+
+def test_rn01_delete_last_set_of_published_workout_returns_422(
+    client: TestClient, auth_headers: dict[str, str], library: dict[str, int]
+) -> None:
+    created = _create(
+        client, auth_headers, sets=[_set(library["Supino reto"])], visibility="published"
+    ).json()
+    only_set = created["sets"][0]["id"]
+
+    response = client.delete(f"{WORKOUTS}/{created['id']}/sets/{only_set}", headers=auth_headers)
+
+    assert response.status_code == 422
+    assert response.json() == RN01_ERROR
+    detail = client.get(f"{WORKOUTS}/{created['id']}", headers=auth_headers).json()
+    assert [s["id"] for s in detail["sets"]] == [only_set]
+
+
+def test_rn01_patch_published_with_empty_sets_returns_422(
+    client: TestClient, auth_headers: dict[str, str], library: dict[str, int]
+) -> None:
+    created = _create(
+        client, auth_headers, sets=[_set(library["Supino reto"])], visibility="published"
+    ).json()
+
+    response = client.patch(f"{WORKOUTS}/{created['id']}", json={"sets": []}, headers=auth_headers)
+
+    assert response.status_code == 422
+    assert response.json() == RN01_ERROR
+    detail = client.get(f"{WORKOUTS}/{created['id']}", headers=auth_headers).json()
+    assert detail["sets"] == created["sets"]
 
 
 # ---------------------------------------------------------------------------
