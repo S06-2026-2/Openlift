@@ -5,8 +5,8 @@
 //   POST /auth/register  {email, password}  -> UserOut
 //   POST /auth/login     {email, password}  -> {access_token, refresh_token, token_type}
 //   POST /auth/refresh   {refresh_token}    -> {access_token, refresh_token}
-//
-// TODO(NOSTR): registerNostrIdentity(npub) -> POST /me/nostr-identity.
+//   GET  /me                                -> UserOut (com o npub registrado)
+//   POST /me/nostr-identity {npub}          -> UserOut (BE-05; só a chave PÚBLICA)
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,6 +68,41 @@ class AuthRepository {
 
   /// Logout: limpa os tokens do dispositivo.
   Future<void> logout() => _storage.clearSession();
+
+  /// Usuário dono da sessão atual.
+  Future<UserModel> fetchMe() async {
+    try {
+      final response = await _api.dio.get<Map<String, dynamic>>('/me');
+      final data = response.data;
+      if (data == null) {
+        throw const ApiException('Resposta inesperada do servidor.');
+      }
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    } on ApiException {
+      rethrow;
+    } on Object {
+      throw const ApiException('Resposta inesperada do servidor.');
+    }
+  }
+
+  /// Registra a chave PÚBLICA gerada no aparelho (RF-03). O corpo tem só o
+  /// `npub`: a chave privada nunca é enviada (RNF-01, ADR-0006).
+  Future<UserModel> registerNostrIdentity(String npub) async {
+    final data = await _post(
+      '/me/nostr-identity',
+      {'npub': npub},
+      overrides: const {
+        409: 'Essa identidade NOSTR já está ligada a outra conta.',
+      },
+    );
+    try {
+      return UserModel.fromJson(data);
+    } on Object {
+      throw const ApiException('Resposta inesperada do servidor.');
+    }
+  }
 
   Future<Map<String, dynamic>> _post(
     String path,
