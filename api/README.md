@@ -71,8 +71,12 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | GET / PATCH / DELETE | `/workouts/{id}` | Detalha, edita (`sets` enviado substitui todas as séries) e exclui |
 | POST | `/workouts/{id}/sets` | Adiciona uma série |
 | PATCH / DELETE | `/workouts/{id}/sets/{set_id}` | Edita ou remove uma série |
+| POST | `/workouts/{id}/publication` | O app avisa que publicou o `kind 1301` (`event_id`, `pubkey`, `d_tag`): treino vira `published`. Idempotente por `event_id`; `pubkey` diferente do `npub` registrado → 403; sem série → 422 (RN-01); republicar após edição = `event_id` novo com o mesmo `d_tag` (RN-08) |
+| POST | `/workouts/{id}/publication-failure` | O app avisa que nenhum relay aceitou (`event_id`, `pubkey`): treino vira `failed`. Idempotente |
 
 Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.
+
+`visibility`, `publish_status` e `d_tag` só mudam pelas rotas de publicação, nunca pelo `PATCH`. O backend não assina nem recebe chave privada: os corpos de `publication*` recusam qualquer campo extra (422). Os eventos registrados ficam em `shared_events` (um por publicação); o treino expõe só o `d_tag`.
 
 ## Erros
 
