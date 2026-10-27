@@ -17,10 +17,11 @@ dependencies:
   dio: ^5.4.0
   # Custódia local de chaves/sessão (Sprint 2)
   flutter_secure_storage: ^9.0.0
-  # Protocolo NOSTR: geração de chaves, assinatura e relays (Sprint 2-4)
-  # dart_nostr: ^9.0.0   # TODO: destravar versão após spike de compatibilidade
   # Gráficos e heatmap (Sprint 3/5)
   fl_chart: ^0.68.0
+  # Protocolo NOSTR (ADR-0003, ADR-0005). Spike do FE-04: chave, assinatura e
+  # NIP-19 com bip340 + crypto em Dart puro (rodam iguais na web e no APK),
+  # sem dart_nostr/ndk. Cliente de relay (WebSocket) fica para o FE-05.
   bip340: ^0.3.1
   crypto: ^3.0.7
   uuid: ^4.6.0

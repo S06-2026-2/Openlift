@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
+import '../../features/auth/presentation/widgets/import_identity_sheet.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workouts/presentation/workout_form_screen.dart';
 import '../../features/workouts/presentation/workout_history_screen.dart';
@@ -158,12 +159,33 @@ class _ProfilePlaceholder extends ConsumerWidget {
         title: 'Perfil em breve',
         description: 'Seus dados, sua identidade na rede aberta e as '
             'preferências do app ficarão aqui.',
-        action: AppButton(
-          label: 'Sair da conta',
-          icon: Icons.logout_rounded,
-          variant: AppButtonVariant.secondary,
-          isFullWidth: false,
-          onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+        action: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppButton(
+              label: 'Sair da conta',
+              icon: Icons.logout_rounded,
+              variant: AppButtonVariant.secondary,
+              isFullWidth: false,
+              onPressed: () =>
+                  ref.read(authControllerProvider.notifier).signOut(),
+            ),
+            const SizedBox(height: 8),
+            // Caminho avançado (RF-04), propositalmente discreto (ADR-0005).
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final imported = await showImportIdentitySheet(context);
+                if (imported == true) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                        content: Text('Identidade NOSTR atualizada.')),
+                  );
+                }
+              },
+              child: const Text('Configurações avançadas'),
+            ),
+          ],
         ),
       ),
     );

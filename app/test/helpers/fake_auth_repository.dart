@@ -27,6 +27,34 @@ class FakeAuthRepository implements AuthRepository {
   /// Registro das chamadas, na ordem: 'login:<email>', 'register:<email>'...
   final List<String> calls = [];
 
+  /// Usuário devolvido por `fetchMe` (FE-04).
+  int userId = 1;
+  String email = 'a@b.com';
+
+  /// `npub` que o "backend" tem registrado para o usuário.
+  String? registeredNpub;
+
+  /// Se definido, `registerNostrIdentity` lança este erro.
+  ApiException? nostrIdentityError;
+
+  /// Chamadas da identidade NOSTR, separadas de [calls]: 'me', 'npub:<npub>'.
+  final List<String> identityCalls = [];
+
+  @override
+  Future<UserModel> fetchMe() async {
+    identityCalls.add('me');
+    return UserModel(id: userId, email: email, npub: registeredNpub);
+  }
+
+  @override
+  Future<UserModel> registerNostrIdentity(String npub) async {
+    identityCalls.add('npub:$npub');
+    final error = nostrIdentityError;
+    if (error != null) throw error;
+    registeredNpub = npub;
+    return UserModel(id: userId, email: email, npub: npub);
+  }
+
   @override
   Stream<void> get sessionExpired => const Stream<void>.empty();
 

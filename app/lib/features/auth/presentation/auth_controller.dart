@@ -9,8 +9,10 @@
 // O estado de envio/erro vive dentro de [AuthState] (e não em AsyncLoading)
 // para o formulário continuar na tela enquanto o login acontece.
 //
-// TODO(NOSTR): após signUp/signIn, garantir a identidade NOSTR local
-//   (NostrIdentityService.ensureIdentityExists) e registrar o npub.
+// FE-04: depois de entrar (e ao restaurar a sessão), garante a identidade
+// NOSTR da conta neste aparelho e registra o `npub` no backend. É melhor
+// esforço: falha de rede não impede o login e a sincronização é refeita na
+// próxima abertura do app. Nada disso aparece na tela (ADR-0005).
 
 import 'dart:async';
 
@@ -18,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../data/auth_repository.dart';
+import '../data/nostr_identity_service.dart';
 
 enum AuthStatus { unauthenticated, authenticated }
 
@@ -64,6 +67,7 @@ class AuthController extends AsyncNotifier<AuthState> {
     ref.onDispose(subscription.cancel);
 
     final hasSession = await repository.hasSession();
+    if (hasSession) unawaited(_syncNostrIdentity());
     return AuthState(
       status: hasSession
           ? AuthStatus.authenticated
@@ -97,6 +101,28 @@ class AuthController extends AsyncNotifier<AuthState> {
     state = const AsyncData(AuthState());
   }
 
+  /// Caminho avançado (RF-04): passa a usar uma identidade NOSTR que a pessoa
+  /// já tem. Registra o `npub` no backend antes de trocar a chave local, para
+  /// app e servidor nunca ficarem com identidades diferentes. Devolve a
+  /// mensagem de erro para a tela, ou `null` se deu certo.
+  Future<String?> importNostrIdentity(String nsec) async {
+    final service = ref.read(nostrIdentityServiceProvider);
+    final repository = ref.read(authRepositoryProvider);
+    try {
+      final identity = service.previewNsec(nsec);
+      final me = await repository.fetchMe();
+      await repository.registerNostrIdentity(identity.npub);
+      await service.importNsec(me.id, nsec);
+      return null;
+    } on InvalidNsecException {
+      return 'Isso não é uma identidade NOSTR (nsec) válida.';
+    } on ApiException catch (e) {
+      return e.message;
+    } on Object {
+      return 'Não foi possível importar a identidade. Tente novamente.';
+    }
+  }
+
   /// Some com a mensagem de erro (ex.: ao alternar Login ↔ Cadastro).
   void clearError() {
     final current = _current;
@@ -109,6 +135,8 @@ class AuthController extends AsyncNotifier<AuthState> {
     try {
       await action();
       state = const AsyncData(AuthState(status: AuthStatus.authenticated));
+      // Em segundo plano: o login não espera a identidade NOSTR.
+      unawaited(_syncNostrIdentity());
       return true;
     } on ApiException catch (e) {
       state = AsyncData(AuthState(errorMessage: e.message));
@@ -118,6 +146,22 @@ class AuthController extends AsyncNotifier<AuthState> {
         AuthState(errorMessage: 'Algo deu errado. Tente novamente.'),
       );
       return false;
+    }
+  }
+
+  /// Gera (ou reaproveita) a identidade da conta e registra o `npub` se o
+  /// backend ainda não tiver esse. Nunca lança.
+  Future<void> _syncNostrIdentity() async {
+    try {
+      final repository = ref.read(authRepositoryProvider);
+      final me = await repository.fetchMe();
+      final identity =
+          await ref.read(nostrIdentityServiceProvider).ensureIdentity(me.id);
+      if (me.npub != identity.npub) {
+        await repository.registerNostrIdentity(identity.npub);
+      }
+    } on Object {
+      // Sem log de propósito (RNF-01). Tenta de novo na próxima abertura.
     }
   }
 }

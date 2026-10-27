@@ -31,3 +31,11 @@ Prometer "armazenamento seguro do SO" na web seria falso.
 - RNF-01 vira teste automatizado: grep de `nsec` e de hex de 64 caracteres em logs e requisições.
 - Suporte a NIP-07/NIP-46 na web entra no backlog como caminho recomendado.
 - O tema entra no `docs/lgpd.md` (análise de privacidade e limitações).
+
+## Notas de implementação
+
+### FE-04 (#83) — 27/10/2026
+
+- **Android:** a chave fica no `flutter_secure_storage`, que usa o Keystore do sistema.
+- **Web:** o mesmo `flutter_secure_storage` guarda a chave no **armazenamento do navegador** (`localStorage` da origem do app), cifrada pelo próprio pacote com uma chave que também fica no navegador, e **não** protegida pelo sistema operacional. Quem tiver acesso ao perfil do navegador ou conseguir rodar script na origem do app pode ler a chave. É a limitação que esta decisão já previa, e está registrada aqui com honestidade.
+- **NIP-07 / NIP-46 (avaliação):** os dois resolvem a limitação da web tirando a chave do app — NIP-07 delega a assinatura a uma extensão do navegador (`window.nostr`), NIP-46 a um assinante remoto. Ficam **fora do FE-04**: exigem que o usuário já tenha extensão ou assinante, o que contraria a identidade invisível do ADR-0005 para o público principal. Entram como caminho avançado opcional, numa issue própria, depois do FE-05.

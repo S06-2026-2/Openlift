@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1. Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,7 +8,7 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 7 | 5 | 17 | 11 |
+| RF | 40 | 10 | 4 | 16 | 10 |
 | RNF | 14 | 2 | 6 | 6 | 0 |
 | RN | 9 | 1 | 2 | 5 | 1 |
 
@@ -19,9 +19,9 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | ID | Pri | Status | Issue → PR | Código | Testes |
 |---|---|---|---|---|---|
 | RF-01 | M | ✅ | BE-01 #23 → #37 · BE-02 #24 → #43 · FE-01 #28 → #39 · FE-02 #29 → #40 | `api/app/core/security.py`, `api/app/services/auth_service.py`, `api/app/api/v1/auth.py`, `app/lib/features/auth/`, `app/lib/core/network/api_client.dart` | `api/tests/test_security.py`, `api/tests/test_auth.py`, `app/test/features/auth/`, `app/test/core/network/api_client_test.dart` |
-| RF-02 | M | ⬜ S2 | S2-01 (a criar) | — | Critérios em `docs/qa/sprint-2.md` |
-| RF-03 | M | 🟡 S2 | S2-02 (a criar) | Schema `NostrIdentityIn` e tabela `nostr_identities` existem; falta a rota | `api/tests/test_schemas.py` (schema) |
-| RF-04 | S | 💤 | — | — | — |
+| RF-02 | M | ✅ | FE-04 #83 | `app/lib/features/auth/data/nostr_identity_service.dart`, `app/lib/core/nostr/nip19.dart`, sincronização em `auth_controller.dart` | `app/test/features/auth/nostr_identity_service_test.dart`, `nostr_identity_sync_test.dart`, `app/test/core/nostr/nip19_test.dart` |
+| RF-03 | M | ✅ | BE-05 → #74 · FE-04 #83 | `POST /me/nostr-identity` (`api/app/api/v1/me.py`); o app registra o `npub` depois do login (`auth_repository.dart`) | `api/tests/test_nostr_identity.py`, `app/test/features/auth/nostr_identity_sync_test.dart` |
+| RF-04 | S | ✅ | FE-04 #83 | Perfil → Configurações avançadas (`import_identity_sheet.dart`) | `nostr_identity_service_test.dart`, `nostr_identity_sync_test.dart` (importação) |
 | RF-05 | S | 💤 | — | — | — |
 | RF-10 | M | ✅ | BE-03 #25 → #44 · FE-03 #30 → #41 | `api/app/infra/db/seed.py`, `api/app/api/v1/exercises.py`, `app/lib/features/workouts/presentation/widgets/exercise_picker_sheet.dart` | `api/tests/test_exercises.py`, `app/test/features/workouts/workout_screens_test.dart` |
 | RF-11 | S | 💤 | — | — | — |
@@ -63,7 +63,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 
 | ID | Status | Issue → PR | Evidência | Falta |
 |---|---|---|---|---|
-| RNF-01 | 🟡 S2 | OPS-02 #32 → #52 | Gitleaks em todo PR impede segredo no repositório | Teste que faz grep de `nsec`/hex de 64 caracteres nos logs (S2-01) |
+| RNF-01 | 🟡 S2 | OPS-02 #32 → #52 · FE-04 #83 | Gitleaks em todo PR; no app, teste do fluxo completo confere que nenhuma requisição nem `print` contém a chave privada (`nostr_identity_sync_test.dart`) | Teste com `caplog` nos logs do backend (TEST-02 #87) |
 | RNF-02 | ⬜ S2 | S2-06 (a criar) | — | Teste com evento adulterado |
 | RNF-03 | ⬜ | — | — | Rate limiting nos endpoints públicos (login/cadastro) |
 | RNF-04 | 🟡 | FE-03 #30 → #41 | Série registrada só em estado local, sem rede até salvar | Teste de widget com timing |

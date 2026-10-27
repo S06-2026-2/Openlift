@@ -2,8 +2,8 @@
 //
 // Guarda o par access/refresh token da sessão. Regras:
 //  - tokens NUNCA são logados, impressos nem aparecem em mensagem de erro;
-//  - `clearSession()` apaga só a sessão. As chaves NOSTR (nsec/npub) terão
-//    ciclo de vida próprio (ADR-005/006) e não entram no logout.
+//  - `clearSession()` apaga só a sessão. A chave NOSTR tem ciclo de vida
+//    próprio (ADR-005/006) e não entra no logout.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -35,8 +35,20 @@ class SecureStorageService {
     await _storage.delete(key: refreshTokenKey);
   }
 
-  // TODO(NOSTR): saveNostrKeyPair(String nsec, String npub) / readNsec() / readNpub()
-  //   — fora do escopo do FE-01; depende do ADR-006 (custódia por plataforma).
+  // ---- identidade NOSTR (FE-04, ADR-0005/0006) ----------------------------
+  //
+  // Uma chave privada por conta (o mesmo aparelho pode ter mais de um
+  // usuário). Ela NÃO é apagada no logout: reabrir o app ou entrar de novo
+  // reutiliza a mesma identidade. Na web, o "armazenamento seguro" é o do
+  // navegador, não o do sistema operacional (ADR-0006).
+
+  static String nostrSecretKey(int userId) => 'nostr.secret.$userId';
+
+  Future<void> saveNostrSecret(int userId, String secretHex) =>
+      _storage.write(key: nostrSecretKey(userId), value: secretHex);
+
+  Future<String?> readNostrSecret(int userId) =>
+      _storage.read(key: nostrSecretKey(userId));
 }
 
 final secureStorageServiceProvider = Provider<SecureStorageService>(
