@@ -9,7 +9,7 @@ on:
       - ".github/workflows/ci-report-agent.yml"
       - ".github/agents/ci-reporter.agent.md"
       - ".github/skills/ci-report/SKILL.md"
-      - ".github/scripts/ci_report_agent.py"
+      - "scripts/ci_report_agent.py"
 
   workflow_run:
     workflows:
