@@ -1,7 +1,7 @@
 """Testes dos schemas Pydantic v2 de validação e serialização (Sprint 1).
 
 Cobre as regras de negócio e validações declaradas nos contratos de dados:
-- Auth: formato de e-mail (EmailStr), tamanho mínimo de senha, tokens e npub
+- Auth: formato de e-mail (EmailStr), tamanho mínimo de senha e tokens
 - Workout: limites numéricos de repetições (gt=0), carga (ge=0) e RPE (0 a 10)
 - User: projeção pública de usuário (UserOut)
 """
@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from app.domain.schemas.auth import LoginRequest, NostrIdentityIn, RegisterRequest, TokenPair
+from app.domain.schemas.auth import LoginRequest, RegisterRequest, TokenPair
 from app.domain.schemas.user import UserOut
 from app.domain.schemas.workout import SetIn, SetOut, WorkoutIn, WorkoutOut
 
@@ -68,21 +68,6 @@ def test_token_pair_default_token_type() -> None:
     assert tokens.access_token == "acc123"
     assert tokens.refresh_token == "ref456"
     assert tokens.token_type == "bearer"
-
-
-def test_nostr_identity_in_valid() -> None:
-    """NostrIdentityIn com npub não-vazio deve validar com sucesso."""
-    # Act
-    payload = NostrIdentityIn(npub="npub1abc123xyz")
-
-    # Assert
-    assert payload.npub == "npub1abc123xyz"
-
-
-def test_nostr_identity_in_empty_npub_raises_validation_error() -> None:
-    """NostrIdentityIn com string vazia deve falhar por violar min_length=1."""
-    with pytest.raises(ValidationError):
-        NostrIdentityIn.model_validate({"npub": ""})
 
 
 # ---------------------------------------------------------------------------

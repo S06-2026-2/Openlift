@@ -4,7 +4,8 @@ Cobre os models declarativos do SQLAlchemy 2.0:
 - User (users): campos obrigatórios, chave primária e unicidade de email
 - Workout (workouts): persistência, data e constraint de Foreign Key para users.id
 - WorkoutSet (sets): persistência, reps, cargas decimais, RPE e FK para workouts.id
-- NostrIdentity (nostr_identities): unicidade de npub, unicidade de user_id (1:1) e FK para users.id
+- NostrIdentity (nostr_identities): unicidade de npub e de pubkey_hex, unicidade de user_id (1:1)
+  e FK para users.id
 """
 
 from datetime import date
@@ -184,7 +185,7 @@ def test_create_nostr_identity_success(db_session: Session) -> None:
     db_session.commit()
 
     npub = "npub1testuser000000000000000000000000000000000000000000000000000"
-    identity = NostrIdentity(user_id=user.id, npub=npub)
+    identity = NostrIdentity(user_id=user.id, npub=npub, pubkey_hex="a" * 64)
 
     # Act
     db_session.add(identity)
@@ -195,6 +196,7 @@ def test_create_nostr_identity_success(db_session: Session) -> None:
     assert identity.id is not None
     assert identity.user_id == user.id
     assert identity.npub == npub
+    assert identity.pubkey_hex == "a" * 64
     assert identity.created_at is not None
 
 
@@ -207,8 +209,8 @@ def test_nostr_identity_duplicate_npub_raises_integrity_error(db_session: Sessio
     db_session.commit()
 
     shared_npub = "npub1shared000000000000000000000000000000000000000000000000000"
-    id1 = NostrIdentity(user_id=user1.id, npub=shared_npub)
-    id2 = NostrIdentity(user_id=user2.id, npub=shared_npub)
+    id1 = NostrIdentity(user_id=user1.id, npub=shared_npub, pubkey_hex="a" * 64)
+    id2 = NostrIdentity(user_id=user2.id, npub=shared_npub, pubkey_hex="b" * 64)
 
     # Act & Assert
     db_session.add(id1)
@@ -229,14 +231,49 @@ def test_nostr_identity_unique_user_id_raises_integrity_error(db_session: Sessio
 
     npub1 = "npub1first000000000000000000000000000000000000000000000000000"
     npub2 = "npub1second00000000000000000000000000000000000000000000000000"
-    id1 = NostrIdentity(user_id=user.id, npub=npub1)
-    id2 = NostrIdentity(user_id=user.id, npub=npub2)
+    id1 = NostrIdentity(user_id=user.id, npub=npub1, pubkey_hex="a" * 64)
+    id2 = NostrIdentity(user_id=user.id, npub=npub2, pubkey_hex="b" * 64)
 
     # Act & Assert
     db_session.add(id1)
     db_session.commit()
 
     db_session.add(id2)
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
+
+def test_nostr_identity_duplicate_pubkey_hex_raises_integrity_error(db_session: Session) -> None:
+    """A mesma chave pública em hex não pode ficar ligada a duas contas."""
+    # Arrange
+    user1 = User(email="hex1@openlift.dev", hashed_password="hash")
+    user2 = User(email="hex2@openlift.dev", hashed_password="hash")
+    db_session.add_all([user1, user2])
+    db_session.commit()
+
+    id1 = NostrIdentity(user_id=user1.id, npub="npub1hexa", pubkey_hex="c" * 64)
+    id2 = NostrIdentity(user_id=user2.id, npub="npub1hexb", pubkey_hex="c" * 64)
+
+    # Act & Assert
+    db_session.add(id1)
+    db_session.commit()
+
+    db_session.add(id2)
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
+
+def test_nostr_identity_without_pubkey_hex_raises_integrity_error(db_session: Session) -> None:
+    """pubkey_hex é obrigatório (NOT NULL)."""
+    # Arrange
+    user = User(email="sem_hex@openlift.dev", hashed_password="hash")
+    db_session.add(user)
+    db_session.commit()
+
+    # Act & Assert
+    db_session.add(NostrIdentity(user_id=user.id, npub="npub1semhex"))
     with pytest.raises(IntegrityError):
         db_session.commit()
     db_session.rollback()
