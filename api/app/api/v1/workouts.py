@@ -43,7 +43,8 @@ _SET_NOT_FOUND = {**_NOT_FOUND, 404: "Treino ou série não encontrados"}
     status_code=status.HTTP_201_CREATED,
     summary="Criar treino",
     description="Cria um treino com suas séries. Limites: carga até 1000 kg, "
-    "repetições até 500, RPE de 1 a 10.",
+    "repetições até 500, RPE de 1 a 10. Treino `published` precisa de ao menos "
+    "uma série (RN-01; senão 422 `published_workout_without_sets`).",
     responses=error_responses({401: "Não autenticado"}),
 )
 def create_workout(payload: WorkoutIn, db: DbSession, user: CurrentUser) -> WorkoutOut:
@@ -93,7 +94,9 @@ def get_workout(workout_id: int, db: DbSession, user: CurrentUser) -> WorkoutOut
     "/{workout_id}",
     response_model=WorkoutOut,
     summary="Editar treino",
-    description="Só os campos enviados mudam. `sets`, se enviado, substitui todas as séries.",
+    description="Só os campos enviados mudam. `sets`, se enviado, substitui todas as séries. "
+    "Não é possível deixar um treino `published` sem séries (RN-01; 422 "
+    "`published_workout_without_sets`).",
     responses=error_responses(_NOT_FOUND),
 )
 def update_workout(
@@ -143,7 +146,11 @@ def update_set(
     "/{workout_id}/sets/{set_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Remover série",
-    responses=error_responses(_SET_NOT_FOUND, validation=False),
+    description="A última série de um treino `published` não pode ser removida "
+    "(RN-01; 422 `published_workout_without_sets`). Torne o treino privado antes.",
+    responses=error_responses(
+        {**_SET_NOT_FOUND, 422: "Última série de um treino publicado (RN-01)"}, validation=False
+    ),
 )
 def delete_set(workout_id: int, set_id: int, db: DbSession, user: CurrentUser) -> Response:
     workout_service.delete_set(db, user, workout_id, set_id)

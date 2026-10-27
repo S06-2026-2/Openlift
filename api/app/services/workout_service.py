@@ -2,6 +2,11 @@
 
 Isolamento: todo acesso filtra por `user.id`. Treino de outro usuário
 responde 404 — o mesmo que um treino inexistente, para não vazar existência.
+
+RN-01: treino publicado precisa ter ao menos uma série. A regra envolve duas
+tabelas (workouts.visibility e a contagem em sets), então fica aqui e não num
+CHECK do banco; toda operação que pode deixar um treino `published` sem
+séries é recusada com 422 antes de mudar qualquer coisa.
 """
 
 from collections.abc import Iterable, Sequence
@@ -41,6 +46,16 @@ def _set_not_found() -> ApiError:
     return ApiError(404, "Série não encontrada.", "set_not_found")
 
 
+def _ensure_publishable(visibility: str, set_count: int) -> None:
+    """RN-01: recusa o estado final "publicado e sem séries"."""
+    if visibility == "published" and set_count == 0:
+        raise ApiError(
+            422,
+            "Treino publicado precisa ter ao menos uma série.",
+            "published_workout_without_sets",
+        )
+
+
 def _ensure_exercises_exist(db: Session, exercise_ids: Iterable[int]) -> None:
     wanted = set(exercise_ids)
     if not wanted:
@@ -72,6 +87,7 @@ def _owned_query(user: User) -> Select[tuple[Workout]]:
 
 
 def create_workout(db: Session, user: User, payload: WorkoutIn) -> Workout:
+    _ensure_publishable(payload.visibility, len(payload.sets))
     _ensure_exercises_exist(db, (s.exercise_id for s in payload.sets))
     workout = Workout(
         user_id=user.id,
@@ -139,6 +155,11 @@ def get_workout(db: Session, user: User, workout_id: int) -> Workout:
 
 def update_workout(db: Session, user: User, workout_id: int, payload: WorkoutUpdate) -> Workout:
     workout = get_workout(db, user, workout_id)
+    if payload.visibility is not None or payload.sets is not None:
+        _ensure_publishable(
+            payload.visibility or workout.visibility,
+            len(payload.sets) if payload.sets is not None else len(workout.sets),
+        )
     if payload.date is not None:
         workout.date = payload.date
     if payload.visibility is not None:
@@ -207,5 +228,7 @@ def update_set(
 
 def delete_set(db: Session, user: User, workout_id: int, set_id: int) -> None:
     workout = get_workout(db, user, workout_id)
-    workout.sets.remove(_get_set(workout, set_id))
+    workout_set = _get_set(workout, set_id)
+    _ensure_publishable(workout.visibility, len(workout.sets) - 1)
+    workout.sets.remove(workout_set)
     db.commit()
