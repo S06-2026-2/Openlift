@@ -2,15 +2,6 @@
 name: CI Report Agent
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/ci-report-agent.yml"
-      - ".github/agents/ci-reporter.agent.md"
-      - ".github/skills/ci-report/SKILL.md"
-      - "scripts/ci_report_agent.py"
-
   workflow_run:
     workflows:
       - Backend CI
@@ -24,15 +15,22 @@ permissions:
 
 jobs:
   collect:
-    if: github.event_name == 'workflow_run'
     name: Collect and Analyze CI Results
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout trusted default branch
+      # ---------------------------------------------------------
+      # Checkout trusted code from the default branch
+      # ---------------------------------------------------------
+
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      # ---------------------------------------------------------
+      # Find completed CI runs for the same commit
+      # ---------------------------------------------------------
 
       - name: Find Backend and Frontend runs
         id: runs
@@ -45,6 +43,7 @@ jobs:
           set -euo pipefail
 
           echo "Looking for CI runs for commit: $HEAD_SHA"
+          echo "Repository: $GH_REPO"
 
           BACKEND_RUN=$(gh run list \
             --repo "$GH_REPO" \
@@ -78,8 +77,10 @@ jobs:
             --json status,conclusion \
             --jq '[.[] | select(.status == "completed")][0].conclusion // empty')
 
-          echo "Backend Run: $BACKEND_RUN ($BACKEND_CONCLUSION)"
-          echo "Frontend Run: $FRONTEND_RUN ($FRONTEND_CONCLUSION)"
+          echo "Backend Run: $BACKEND_RUN"
+          echo "Backend Conclusion: $BACKEND_CONCLUSION"
+          echo "Frontend Run: $FRONTEND_RUN"
+          echo "Frontend Conclusion: $FRONTEND_CONCLUSION"
 
           {
             echo "backend_run=$BACKEND_RUN"
@@ -89,20 +90,36 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           if [[ -n "$BACKEND_RUN" && -n "$FRONTEND_RUN" ]]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Both CI workflows completed."
           else
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Waiting for both CI workflows."
           fi
+
+      # ---------------------------------------------------------
+      # Stop if both CI results are not available
+      # ---------------------------------------------------------
 
       - name: CI results not ready
         if: steps.runs.outputs.ready != 'true'
         run: |
-          echo "Both CI workflows have not completed yet."
-          echo "Waiting for the next workflow_run event."
+          echo "Backend and Frontend CI are not both completed."
+          echo "The next workflow_run event may trigger another check."
+
+      # ---------------------------------------------------------
+      # Prepare directories
+      # ---------------------------------------------------------
 
       - name: Create input directories
         if: steps.runs.outputs.ready == 'true'
-        run: mkdir -p ci-input/backend ci-input/frontend
+        run: |
+          mkdir -p ci-input/backend
+          mkdir -p ci-input/frontend
+
+      # ---------------------------------------------------------
+      # Download Backend CI artifacts
+      # ---------------------------------------------------------
 
       - name: Download Backend artifacts
         if: steps.runs.outputs.ready == 'true'
@@ -115,6 +132,10 @@ jobs:
             --repo "$GH_REPO" \
             --dir ci-input/backend
 
+      # ---------------------------------------------------------
+      # Download Frontend CI artifacts
+      # ---------------------------------------------------------
+
       - name: Download Frontend artifacts
         if: steps.runs.outputs.ready == 'true'
         env:
@@ -126,17 +147,45 @@ jobs:
             --repo "$GH_REPO" \
             --dir ci-input/frontend
 
+      # ---------------------------------------------------------
+      # Display collected artifacts
+      # ---------------------------------------------------------
+
       - name: Show collected CI artifacts
         if: steps.runs.outputs.ready == 'true'
-        run: find ci-input -type f -print
+        run: |
+          echo "========================================"
+          echo "BACKEND ARTIFACTS"
+          echo "========================================"
+          find ci-input/backend -type f -print
 
-      - name: Verify expected artifacts
+          echo ""
+          echo "========================================"
+          echo "FRONTEND ARTIFACTS"
+          echo "========================================"
+          find ci-input/frontend -type f -print
+
+      # ---------------------------------------------------------
+      # Verify expected artifacts
+      # ---------------------------------------------------------
+
+      - name: Verify Backend artifacts
         if: steps.runs.outputs.ready == 'true'
         run: |
           test -d ci-input/backend/backend-lint-results
           test -d ci-input/backend/backend-test-results
+          echo "Backend artifacts verified."
+
+      - name: Verify Frontend artifacts
+        if: steps.runs.outputs.ready == 'true'
+        run: |
           test -d ci-input/frontend/frontend-analysis-results
           test -d ci-input/frontend/frontend-test-results
+          echo "Frontend artifacts verified."
+
+      # ---------------------------------------------------------
+      # Create CI metadata
+      # ---------------------------------------------------------
 
       - name: Create CI metadata
         if: steps.runs.outputs.ready == 'true'
@@ -172,6 +221,10 @@ jobs:
           )
           PY
 
+      # ---------------------------------------------------------
+      # Upload collected CI results
+      # ---------------------------------------------------------
+
       - name: Upload collected CI results
         if: steps.runs.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
@@ -180,13 +233,22 @@ jobs:
           path: ci-input/
           if-no-files-found: error
 
+      # ---------------------------------------------------------
+      # Run Gemini CI Reporter Agent
+      # ---------------------------------------------------------
+
       - name: Generate Gemini CI report
         id: agent
         if: steps.runs.outputs.ready == 'true'
         continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python scripts/ci_report_agent.py
+        run: |
+          python scripts/ci_report_agent.py
+
+      # ---------------------------------------------------------
+      # Publish report to GitHub Actions summary
+      # ---------------------------------------------------------
 
       - name: Publish report to job summary
         if: steps.runs.outputs.ready == 'true'
@@ -195,82 +257,19 @@ jobs:
           if [[ -f CI_REPORT.md ]]; then
             cat CI_REPORT.md >> "$GITHUB_STEP_SUMMARY"
           else
-            echo '## CI Report Agent' >> "$GITHUB_STEP_SUMMARY"
-            echo 'Gemini report unavailable. Check the agent step.' >> "$GITHUB_STEP_SUMMARY"
+            echo "## CI Report Agent" >> "$GITHUB_STEP_SUMMARY"
+            echo "Gemini report unavailable. Check the agent step." \
+              >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # ---------------------------------------------------------
+      # Upload generated Gemini report
+      # ---------------------------------------------------------
 
       - name: Upload Gemini CI report
         if: steps.runs.outputs.ready == 'true' && steps.agent.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: gemini-ci-report
-          path: CI_REPORT.md
-          if-no-files-found: error
-
-  pr-test:
-    name: Test Gemini Agent on PR
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Create sample CI artifacts
-        shell: bash
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          mkdir -p ci-input/backend/backend-lint-results
-          mkdir -p ci-input/backend/backend-test-results
-          mkdir -p ci-input/frontend/frontend-analysis-results
-          mkdir -p ci-input/frontend/frontend-test-results
-
-          printf 'Ruff: PASS\nBlack: PASS\nMyPy: PASS\n' \
-            > ci-input/backend/backend-lint-results/summary.txt
-
-          printf 'Pytest: 12 passed, 0 failed (SAMPLE DATA)\n' \
-            > ci-input/backend/backend-test-results/summary.txt
-
-          printf 'Flutter analyze: PASS (SAMPLE DATA)\n' \
-            > ci-input/frontend/frontend-analysis-results/summary.txt
-
-          printf 'Flutter tests: PASS (SAMPLE DATA)\n' \
-            > ci-input/frontend/frontend-test-results/summary.txt
-
-          printf \
-            'PR test using synthetic artifacts. NOT real CI results.\nCommit: %s\n' \
-            "$HEAD_SHA" > ci-input/metadata.txt
-
-      - name: Generate Gemini test report
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python scripts/ci_report_agent.py
-
-      - name: Publish report summary
-        if: always()
-        shell: bash
-        run: |
-          if [[ -f CI_REPORT.md ]]; then
-            {
-              echo '> Teste com artefatos simulados; não representa o CI real.'
-              echo ''
-              cat CI_REPORT.md
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'Gemini did not generate CI_REPORT.md.' \
-              >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Upload test report
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gemini-pr-test-report
           path: CI_REPORT.md
           if-no-files-found: error
