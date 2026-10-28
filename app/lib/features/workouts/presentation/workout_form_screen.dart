@@ -6,6 +6,13 @@
 //
 // Limites (RN-07): carga ≤ 1000 kg e reps ≤ 500, validados aqui; o 422 do
 // servidor também é tratado e mostrado em linguagem humana.
+//
+// FE-05 — Visibilidade Privado / Publicado (RF-21, só ida). Publicar pede
+// confirmação antes de salvar (consentimento na 1ª vez, RNF-12); salvar um
+// treino publicado pergunta se publica a nova versão (RN-08). A
+// publicação segue em segundo plano e o resultado aparece no histórico.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +27,8 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
+import '../../social/presentation/publication_controller.dart';
+import '../../social/presentation/widgets/publication_widgets.dart';
 import '../domain/exercise_model.dart';
 import '../domain/set_model.dart';
 import '../domain/workout_model.dart';
@@ -141,16 +150,21 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
   final _formKey = GlobalKey<FormState>();
   final List<_ExerciseBlock> _blocks = [];
   late DateTime _date;
+  late bool _publish;
   bool _saving = false;
   String? _error;
 
   bool get _isEdit => widget.workoutId != null;
+
+  /// Já publicado: a visibilidade fica travada em Publicado.
+  bool get _wasPublished => widget.initial?.isPublished ?? false;
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initial;
     _date = DateUtils.dateOnly(initial?.date ?? DateTime.now());
+    _publish = _wasPublished;
     if (initial != null) _loadBlocks(initial);
   }
 
@@ -272,6 +286,20 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    // Decide antes de salvar: depois do PATCH esta tela é reconstruída.
+    // Publicar um privado sem confirmação não salva nada (a pessoa pode
+    // voltar ao Privado); num publicado, "Agora não" só salva.
+    final bool publish;
+    if (_wasPublished) {
+      publish = await confirmRepublication(context);
+    } else if (_publish) {
+      if (!await confirmPublication(context, ref)) return;
+      publish = true;
+    } else {
+      publish = false;
+    }
+    if (!mounted) return;
+
     final workout = WorkoutModel(
       date: _date,
       sets: [
@@ -291,15 +319,30 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
     setState(() => _saving = true);
     final controller = ref.read(workoutControllerProvider.notifier);
     try {
-      if (_isEdit) {
-        await controller.edit(widget.workoutId!, workout);
-      } else {
-        await controller.create(workout);
-      }
+      final saved = _isEdit
+          ? await controller.edit(widget.workoutId!, workout)
+          : await controller.create(workout);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Treino salvo.')),
-      );
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(SnackBar(
+        content:
+            Text(publish ? 'Treino salvo. Publicando...' : 'Treino salvo.'),
+      ));
+      if (publish) {
+        // Segue depois que a tela fecha; o histórico mostra o andamento.
+        unawaited(
+          ref
+              .read(publicationControllerProvider.notifier)
+              .publish(saved)
+              .then((result) {
+            if (result != null) {
+              messenger
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(result.summary)));
+            }
+          }),
+        );
+      }
       context.go(AppRoutes.workouts);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -338,6 +381,14 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
             padding: pagePadding(constraints),
             children: [
               _DateTile(date: _date, onTap: _pickDate),
+              const SizedBox(height: 12),
+              _VisibilityTile(
+                publish: _publish,
+                locked: _wasPublished,
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _publish = value),
+              ),
               const SizedBox(height: 16),
               if (_error != null) ...[
                 ErrorBanner(message: _error!),
@@ -431,6 +482,68 @@ class _DateTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// RF-21: Privado / Publicado. Depois de publicado, não volta.
+class _VisibilityTile extends StatelessWidget {
+  const _VisibilityTile({
+    required this.publish,
+    required this.locked,
+    required this.onChanged,
+  });
+
+  final bool publish;
+  final bool locked;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Visibilidade',
+              style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+            ),
+            const Spacer(),
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('Privado'),
+                  icon: Icon(Icons.lock_outline_rounded, size: 16),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Publicado'),
+                  icon: Icon(Icons.public_rounded, size: 16),
+                ),
+              ],
+              selected: {publish},
+              onSelectionChanged: locked || onChanged == null
+                  ? null
+                  : (selection) => onChanged!(selection.first),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          locked
+              ? 'Publicado no NOSTR. Não dá para voltar a privado.'
+              : publish
+                  ? 'Ao salvar, o treino fica público e permanente no NOSTR.'
+                  : 'Só você vê este treino.',
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
     );
   }
 }
