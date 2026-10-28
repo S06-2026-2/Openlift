@@ -3,8 +3,12 @@
 // Para cada relay: abre a conexão, envia `["EVENT", <evento>]` de cada evento
 // e espera o `["OK", <id>, <aceito>, <mensagem>]` do último (o kind 1301).
 // Os relays são independentes: um fora do ar não atrasa nem derruba os
-// outros, e cada um tem o seu resultado (RF-22). Leitura (REQ) fica para o
-// FE-06.
+// outros, e cada um tem o seu resultado (RF-22).
+//
+// FE-06 — Leitura: `["REQ", <id>, <filtros>...]`, junta os `EVENT` até o
+// `EOSE` e fecha a assinatura. Conexão que falha é tentada de novo com espera
+// crescente (backoff). Eventos repetidos entre relays chegam uma vez só
+// (RF-24); quem verifica a assinatura é quem consome (RF-51).
 //
 // Só trafegam eventos já assinados. A chave privada não passa por aqui.
 
@@ -61,12 +65,47 @@ class RelayPublishResult {
   }
 }
 
+/// Como terminou a leitura em um relay.
+enum RelayReadStatus {
+  /// Mandou tudo o que tinha (`EOSE`).
+  complete,
+
+  /// Conectou, mas não mandou o `EOSE` (demorou ou a conexão caiu); o que
+  /// chegou até ali é usado.
+  timeout,
+
+  /// Não conectou, mesmo depois das novas tentativas.
+  unreachable,
+}
+
+class RelayReadResult {
+  const RelayReadResult({required this.url, required this.status});
+
+  final String url;
+  final RelayReadStatus status;
+
+  bool get responded => status != RelayReadStatus.unreachable;
+}
+
+class RelayQueryResult {
+  const RelayQueryResult({required this.events, required this.relays});
+
+  /// Um por `id`, na ordem em que chegaram. Assinatura ainda não verificada.
+  final List<NostrEvent> events;
+  final List<RelayReadResult> relays;
+
+  bool get anyRelayResponded => relays.any((r) => r.responded);
+}
+
 class NostrRelayService {
   NostrRelayService({
     required this.relays,
     RelayConnector? connector,
     this.timeout = const Duration(seconds: 8),
-  }) : _connector = connector ?? _WebSocketRelayConnection.new;
+    this.connectAttempts = 3,
+    Future<void> Function(Duration)? delay,
+  })  : _connector = connector ?? _WebSocketRelayConnection.new,
+        _delay = delay ?? Future<void>.delayed;
 
   /// URLs `wss://` dos relays, na ordem configurada.
   final List<String> relays;
@@ -74,7 +113,12 @@ class NostrRelayService {
   /// Limite para conectar e, depois, para a resposta `OK`.
   final Duration timeout;
 
+  /// Tentativas de conexão na leitura (a 1ª + novas tentativas).
+  final int connectAttempts;
+
   final RelayConnector _connector;
+  final Future<void> Function(Duration) _delay;
+  int _subscriptions = 0;
 
   /// Envia [events] (nessa ordem) a todos os relays em paralelo. O resultado
   /// de cada relay é o do último evento. Nunca lança.
@@ -127,6 +171,117 @@ class NostrRelayService {
       await subscription?.cancel();
       // Fechar não pode travar nem derrubar o resultado.
       unawaited(connection?.close().catchError((Object _) {}));
+    }
+  }
+
+  /// Lê de todos os relays em paralelo os eventos que batem com [filters]
+  /// (formato NIP-01, ex.: `{"kinds": [1301], "authors": [...]}`). Nunca
+  /// lança: relay fora do ar só aparece no resultado dele.
+  Future<RelayQueryResult> query(List<Map<String, Object>> filters) async {
+    if (filters.isEmpty) throw ArgumentError('Nenhum filtro');
+    final perRelay = await Future.wait(
+      [for (final url in relays) _queryRelay(url, filters)],
+    );
+    final seen = <String>{};
+    return RelayQueryResult(
+      events: [
+        for (final (_, events) in perRelay)
+          for (final event in events)
+            if (seen.add(event.id)) event,
+      ],
+      relays: [for (final (result, _) in perRelay) result],
+    );
+  }
+
+  Future<(RelayReadResult, List<NostrEvent>)> _queryRelay(
+    String url,
+    List<Map<String, Object>> filters,
+  ) async {
+    final events = <NostrEvent>[];
+    (RelayReadResult, List<NostrEvent>) result(RelayReadStatus status) =>
+        (RelayReadResult(url: url, status: status), events);
+
+    final connection = await _connectWithBackoff(url);
+    if (connection == null) return result(RelayReadStatus.unreachable);
+
+    final subscription = 'openlift-${++_subscriptions}';
+    final finished = Completer<bool>(); // true = EOSE
+    final listener = connection.messages.listen(
+      (message) {
+        final decoded = _decodeList(message);
+        if (decoded == null || decoded.length < 2) return;
+        if (decoded[1] != subscription) return;
+        switch (decoded[0]) {
+          case 'EVENT' when decoded.length >= 3 && decoded[2] is Map:
+            try {
+              events.add(NostrEvent.fromJson(
+                Map<String, dynamic>.from(decoded[2] as Map),
+              ));
+            } on FormatException {
+              // Evento malformado: descartado.
+            }
+          case 'EOSE' || 'CLOSED':
+            if (!finished.isCompleted) finished.complete(decoded[0] == 'EOSE');
+        }
+      },
+      onError: (Object _) {
+        if (!finished.isCompleted) finished.complete(false);
+      },
+      onDone: () {
+        if (!finished.isCompleted) finished.complete(false);
+      },
+    );
+
+    try {
+      connection.send(jsonEncode(['REQ', subscription, ...filters]));
+      final complete = await finished.future.timeout(timeout);
+      return result(
+          complete ? RelayReadStatus.complete : RelayReadStatus.timeout);
+    } on TimeoutException {
+      return result(RelayReadStatus.timeout);
+    } on Object {
+      return result(RelayReadStatus.unreachable);
+    } finally {
+      try {
+        connection.send(jsonEncode(['CLOSE', subscription]));
+      } on Object {
+        // Conexão já caiu: nada a fechar.
+      }
+      await listener.cancel();
+      unawaited(connection.close().catchError((Object _) {}));
+    }
+  }
+
+  /// Conecta com até [connectAttempts] tentativas, esperando 0,5 s, 1 s,
+  /// 2 s... entre elas, sem passar de [timeout] no total: relay fora do ar
+  /// não segura a tela. `null` se nenhuma deu certo.
+  Future<RelayConnection?> _connectWithBackoff(String url) async {
+    final elapsed = Stopwatch()..start();
+    var wait = const Duration(milliseconds: 500);
+    for (var attempt = 1; attempt <= connectAttempts; attempt++) {
+      RelayConnection? connection;
+      try {
+        connection = _connector(Uri.parse(url));
+        await connection.ready.timeout(timeout - elapsed.elapsed);
+        return connection;
+      } on Object {
+        unawaited(connection?.close().catchError((Object _) {}));
+        if (attempt == connectAttempts) break;
+        if (elapsed.elapsed + wait >= timeout) break;
+        await _delay(wait);
+        wait *= 2;
+      }
+    }
+    return null;
+  }
+
+  static List<dynamic>? _decodeList(dynamic message) {
+    if (message is! String) return null;
+    try {
+      final decoded = jsonDecode(message);
+      return decoded is List ? decoded : null;
+    } on FormatException {
+      return null;
     }
   }
 
