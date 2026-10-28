@@ -1,5 +1,6 @@
 // FE-03 — WorkoutRepository contra um adapter HTTP falso: rotas, query
 // params, parsing tolerante e mensagens humanas de erro (incl. 422).
+// FE-05 — rotas de publicação: só dados públicos do evento no corpo.
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -164,5 +165,74 @@ void main() {
         ),
       ),
     );
+  });
+
+  group('publicação (FE-05)', () {
+    const eventId =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const pubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const dTag = '7c9e6679-7425-4f1b-9a2e-6a1f0c8d5b34';
+
+    test('registerPublication envia event_id, pubkey e d_tag', () async {
+      build((_) => jsonResponse({
+            ...workoutJson,
+            'visibility': 'published',
+            'publish_status': 'published',
+            'd_tag': dTag,
+          }));
+
+      final saved = await repository.registerPublication(
+        7,
+        eventId: eventId,
+        pubkey: pubkey,
+        dTag: dTag,
+      );
+
+      final request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/workouts/7/publication');
+      expect(request.data, {
+        'event_id': eventId,
+        'pubkey': pubkey,
+        'd_tag': dTag,
+      });
+      expect(saved.publishStatus, PublishStatus.published);
+      expect(saved.dTag, dTag);
+    });
+
+    test('registerPublicationFailure envia só event_id e pubkey', () async {
+      build((_) => jsonResponse({...workoutJson, 'publish_status': 'failed'}));
+
+      final saved = await repository.registerPublicationFailure(
+        7,
+        eventId: eventId,
+        pubkey: pubkey,
+      );
+
+      final request = adapter.requests.single;
+      expect(request.path, '/workouts/7/publication-failure');
+      expect(request.data, {'event_id': eventId, 'pubkey': pubkey});
+      expect(saved.publishStatus, PublishStatus.failed);
+    });
+
+    test('403 e 422 viram mensagens humanas de publicação', () async {
+      build((_) => jsonResponse({'code': 'pubkey_mismatch'}, status: 403));
+      await expectLater(
+        repository.registerPublication(7,
+            eventId: eventId, pubkey: pubkey, dTag: dTag),
+        throwsA(isA<ApiException>().having(
+            (e) => e.message, 'message', contains('identidade NOSTR'))),
+      );
+
+      client.dispose();
+      build((_) => jsonResponse({'code': 'no_sets'}, status: 422));
+      await expectLater(
+        repository.registerPublication(7,
+            eventId: eventId, pubkey: pubkey, dTag: dTag),
+        throwsA(isA<ApiException>()
+            .having((e) => e.message, 'message', contains('uma série'))),
+      );
+    });
   });
 }

@@ -49,6 +49,20 @@ class SecureStorageService {
 
   Future<String?> readNostrSecret(int userId) =>
       _storage.read(key: nostrSecretKey(userId));
+
+  // ---- consentimento de publicação (FE-05, RNF-12) ------------------------
+  //
+  // Por conta e por aparelho: registra que a pessoa leu que treino publicado
+  // é público e não se apaga. Também sobrevive ao logout.
+
+  static String publishConsentKey(int userId) =>
+      'nostr.publish_consent.$userId';
+
+  Future<void> savePublishConsent(int userId) =>
+      _storage.write(key: publishConsentKey(userId), value: 'true');
+
+  Future<bool> hasPublishConsent(int userId) async =>
+      await _storage.read(key: publishConsentKey(userId)) == 'true';
 }
 
 final secureStorageServiceProvider = Provider<SecureStorageService>(

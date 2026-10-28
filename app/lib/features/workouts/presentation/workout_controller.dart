@@ -81,15 +81,20 @@ class WorkoutController extends AsyncNotifier<List<WorkoutModel>> {
     return _newestFirst(workouts.where(filter.matches).toList());
   }
 
-  Future<void> create(WorkoutModel workout) async {
-    await ref.read(workoutRepositoryProvider).createWorkout(workout);
+  /// Devolve o treino salvo (com id), para a publicação logo em seguida.
+  Future<WorkoutModel> create(WorkoutModel workout) async {
+    final saved =
+        await ref.read(workoutRepositoryProvider).createWorkout(workout);
     ref.invalidateSelf();
+    return saved;
   }
 
-  Future<void> edit(int id, WorkoutModel workout) async {
-    await ref.read(workoutRepositoryProvider).updateWorkout(id, workout);
+  Future<WorkoutModel> edit(int id, WorkoutModel workout) async {
+    final saved =
+        await ref.read(workoutRepositoryProvider).updateWorkout(id, workout);
     ref.invalidate(workoutByIdProvider(id));
     ref.invalidateSelf();
+    return saved;
   }
 
   /// Exclui e some com o treino da lista na hora (sem novo GET).

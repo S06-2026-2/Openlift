@@ -1,8 +1,9 @@
 // FE-03 — Exercício da biblioteca (nome + grupo muscular), usado no seletor
 // do formulário e na taxonomia do dashboard/heatmap.
 //
-// Contrato esperado (BE-03): GET /exercises -> [{id, name, muscle_group}],
-// onde `muscle_group` pode ser texto ("Peito") ou objeto ({id, name}).
+// Contrato esperado (BE-03): GET /exercises -> [{id, name, muscle_group,
+// equipment}], onde `muscle_group` pode ser texto ("Peito") ou objeto
+// ({id, name}) e `equipment` é o valor do NIP-101e usado no kind 33401.
 
 import '../../../core/utils/json_utils.dart';
 
@@ -11,6 +12,7 @@ class ExerciseModel {
     required this.id,
     required this.name,
     required this.muscleGroup,
+    this.equipment,
   });
 
   /// Grupo exibido quando a API não informa um.
@@ -19,6 +21,10 @@ class ExerciseModel {
   final int id;
   final String name;
   final String muscleGroup;
+
+  /// `barbell`, `dumbbell`, `bodyweight`, `machine` ou `cardio` (NIP-101e).
+  /// `null` quando a API não informa.
+  final String? equipment;
 
   factory ExerciseModel.fromJson(Map<String, dynamic> json) {
     final group = json['muscle_group'];
@@ -31,6 +37,7 @@ class ExerciseModel {
     }
     final id = asInt(json['id']);
     final name = json['name'];
+    final equipment = json['equipment'];
     if (id == null || name is! String) {
       throw const FormatException('Exercício inválido');
     }
@@ -40,6 +47,7 @@ class ExerciseModel {
       muscleGroup: (groupName == null || groupName.trim().isEmpty)
           ? fallbackGroup
           : groupName,
+      equipment: equipment is String ? equipment : null,
     );
   }
 
@@ -47,6 +55,7 @@ class ExerciseModel {
         'id': id,
         'name': name,
         'muscle_group': muscleGroup,
+        if (equipment != null) 'equipment': equipment,
       };
 
   @override

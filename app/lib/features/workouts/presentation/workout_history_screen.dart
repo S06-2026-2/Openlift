@@ -1,6 +1,9 @@
 // FE-03 — Histórico de treinos: lista com pull-to-refresh, estados
 // loading/error/empty, filtro por data/exercício, editar e excluir (com
 // confirmação).
+//
+// FE-05 — Cada treino mostra o status da publicação no NOSTR (RF-25) e, na
+// sessão, o resultado por relay com "Tentar novamente" (RF-22).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +14,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
+import '../../social/presentation/widgets/publication_widgets.dart';
 import '../domain/exercise_model.dart';
 import '../domain/workout_model.dart';
 import 'widgets/state_views.dart';
@@ -19,6 +23,10 @@ import 'workout_controller.dart';
 
 class WorkoutHistoryScreen extends ConsumerWidget {
   const WorkoutHistoryScreen({super.key});
+
+  /// RF-21: excluir aqui não despublica.
+  static const String _publishedNote =
+      '\n\nEle já foi publicado e continua público nos relays NOSTR.';
 
   Future<void> _openFilter(BuildContext context, WidgetRef ref) async {
     final library = ref.read(exerciseLibraryProvider).valueOrNull ?? const [];
@@ -42,7 +50,8 @@ class WorkoutHistoryScreen extends ConsumerWidget {
         title: const Text('Excluir treino?'),
         content: Text(
           'O treino de ${formatDateBr(workout.date)} será removido. '
-          'Essa ação não pode ser desfeita.',
+          'Essa ação não pode ser desfeita.'
+          '${workout.isPublished ? _publishedNote : ''}',
         ),
         actions: [
           TextButton(
@@ -232,6 +241,8 @@ class _WorkoutRow extends StatelessWidget {
                     ' · ${formatKg(workout.volumeKg)}',
                     style: theme.textTheme.bodySmall,
                   ),
+                  const SizedBox(height: 4),
+                  PublicationStatusView(workout: workout),
                 ],
               ),
             ),
