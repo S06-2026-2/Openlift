@@ -152,6 +152,7 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
   late DateTime _date;
   late bool _publish;
   bool _saving = false;
+  bool _confirming = false;
   String? _error;
 
   bool get _isEdit => widget.workoutId != null;
@@ -269,7 +270,7 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _confirming) return;
     setState(() => _error = null);
 
     if (_blocks.isEmpty) {
@@ -286,6 +287,19 @@ class _WorkoutFormState extends ConsumerState<_WorkoutForm> {
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    // Trava antes de qualquer await: a confirmação consulta a API antes de
+    // abrir o diálogo, e um 2º toque nesse intervalo abriria outro diálogo e
+    // duplicaria treino e evento (S2-04). Sem setState, para o spinner do
+    // botão não girar atrás do diálogo.
+    _confirming = true;
+    try {
+      await _confirmAndSave();
+    } finally {
+      _confirming = false;
+    }
+  }
+
+  Future<void> _confirmAndSave() async {
     // Decide antes de salvar: depois do PATCH esta tela é reconstruída.
     // Publicar um privado sem confirmação não salva nada (a pessoa pode
     // voltar ao Privado); num publicado, "Agora não" só salva.
