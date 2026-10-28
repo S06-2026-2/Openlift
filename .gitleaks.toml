@@ -28,4 +28,10 @@ regexes = [
   # Exemplo de JWT truncado nos schemas do Swagger (api/app/domain/schemas/auth.py):
   # é só o cabeçalho {"alg":"HS256"...} em base64, seguido de "...".
   '''eyJhbGciOiJIUzI1NiIs\.\.\.''',
+  # Chaves PÚBLICAS NOSTR (pubkey x-only, em hex) usadas como exemplo e em
+  # testes: o vetor oficial da NIP-19 e a pubkey dos exemplos do mini-NIP
+  # (docs/nips/examples/). Chave pública não é segredo; a regra
+  # generic-api-key só dispara porque a variável se chama "PUBKEY".
+  '''3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d''',
+  '''3361fd648012d81dfb176fd52b6c0f6dd9c5979b3bf40beaa30a9dae199a7f6a''',
 ]

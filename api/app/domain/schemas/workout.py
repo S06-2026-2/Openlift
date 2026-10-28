@@ -97,6 +97,63 @@ class WorkoutUpdate(BaseModel):
     sets: list[SetIn] | None = Field(default=None, max_length=MAX_SETS_PER_WORKOUT)
 
 
+_HEX64 = r"^[0-9a-f]{64}$"
+_UUID_V4 = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+_EVENT_ID_EXAMPLE = "b" * 64
+_PUBKEY_EXAMPLE = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
+
+
+class PublicationIn(BaseModel):
+    """Aviso de que o app publicou o treino (kind 1301) em ao menos um relay.
+
+    O app monta, assina e publica o evento; o backend só registra o resultado.
+    O corpo é fechado (`extra="forbid"`): nada além destes campos é aceito, em
+    especial nenhum material de chave privada (RNF-01, ADR-0006).
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "event_id": _EVENT_ID_EXAMPLE,
+                    "pubkey": _PUBKEY_EXAMPLE,
+                    "d_tag": "7c9e6679-7425-4f1b-9a2e-6a1f0c8d5b34",
+                }
+            ]
+        },
+    )
+
+    event_id: str = Field(pattern=_HEX64, description="`id` do evento (NIP-01): 64 hex minúsculos")
+    pubkey: str = Field(
+        pattern=_HEX64,
+        description="`pubkey` do evento (64 hex minúsculos); precisa ser a do `npub` do usuário",
+    )
+    d_tag: str = Field(
+        pattern=_UUID_V4,
+        description="Tag `d` do evento: UUID v4 minúsculo, o mesmo em toda "
+        "republicação do treino (RN-08)",
+    )
+
+
+class PublicationFailureIn(BaseModel):
+    """Aviso de que a tentativa de publicar o treino falhou em todos os relays."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [{"event_id": _EVENT_ID_EXAMPLE, "pubkey": _PUBKEY_EXAMPLE}]
+        },
+    )
+
+    event_id: str = Field(
+        pattern=_HEX64, description="`id` do evento que não chegou a nenhum relay"
+    )
+    pubkey: str = Field(
+        pattern=_HEX64, description="`pubkey` do evento; precisa ser a do `npub` do usuário"
+    )
+
+
 class WorkoutOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -107,8 +164,10 @@ class WorkoutOut(BaseModel):
     publish_status: PublishStatus = Field(
         default="local", description="local | published | failed (RF-25; definido pelo servidor)"
     )
-    shared_event_id: str | None = Field(
-        default=None, description="Evento NOSTR publicado (kind 1301), quando compartilhado"
+    d_tag: str | None = Field(
+        default=None,
+        description="Tag `d` (UUID v4) do evento kind 1301; fixa por treino, reutilizada "
+        "ao republicar após edição (RN-08). Nulo até a primeira publicação",
     )
     sets: list[SetOut] = Field(default_factory=list)
 
