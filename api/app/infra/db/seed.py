@@ -1,8 +1,9 @@
 """Seed da biblioteca de exercícios (BE-03, RF-10): 10 grupos musculares e
-40 exercícios comuns.
+40 exercícios comuns, cada um com o equipamento do NIP-101e (mini-NIP §3).
 
 Idempotente: pode rodar quantas vezes quiser. Cria o que falta, corrige o
-grupo de um exercício que mudou de lugar e nunca duplica (busca por nome).
+grupo e o equipamento de um exercício que mudou e nunca duplica (busca por
+nome).
 
 Uso (com o banco migrado):
     docker compose run --rm api python -m app.infra.db.seed
@@ -44,6 +45,50 @@ LIBRARY: dict[str, list[str]] = {
     "Abdômen": ["Abdominal crunch", "Prancha", "Elevação de pernas", "Abdominal na polia"],
 }
 
+# Equipamento de cada exercício (vocabulário do NIP-101e). Polia/cabo → machine.
+EQUIPMENT: dict[str, str] = {
+    "Supino reto": "barbell",
+    "Supino inclinado": "barbell",
+    "Crucifixo com halteres": "dumbbell",
+    "Flexão de braço": "bodyweight",
+    "Puxada frontal": "machine",
+    "Remada curvada": "barbell",
+    "Remada baixa": "machine",
+    "Barra fixa": "bodyweight",
+    "Desenvolvimento com halteres": "dumbbell",
+    "Elevação lateral": "dumbbell",
+    "Elevação frontal": "dumbbell",
+    "Crucifixo invertido": "dumbbell",
+    "Rosca direta": "barbell",
+    "Rosca alternada": "dumbbell",
+    "Rosca martelo": "dumbbell",
+    "Rosca Scott": "barbell",
+    "Tríceps pulley": "machine",
+    "Tríceps testa": "barbell",
+    "Tríceps francês": "dumbbell",
+    "Mergulho entre bancos": "bodyweight",
+    "Agachamento livre": "barbell",
+    "Leg press 45°": "machine",
+    "Cadeira extensora": "machine",
+    "Agachamento búlgaro": "dumbbell",
+    "Levantamento terra romeno": "barbell",
+    "Stiff": "barbell",
+    "Mesa flexora": "machine",
+    "Cadeira flexora": "machine",
+    "Elevação pélvica": "barbell",
+    "Afundo": "dumbbell",
+    "Glúteo na polia": "machine",
+    "Cadeira abdutora": "machine",
+    "Panturrilha em pé": "machine",
+    "Panturrilha sentado": "machine",
+    "Panturrilha no leg press": "machine",
+    "Panturrilha unilateral": "bodyweight",
+    "Abdominal crunch": "bodyweight",
+    "Prancha": "bodyweight",
+    "Elevação de pernas": "bodyweight",
+    "Abdominal na polia": "machine",
+}
+
 
 @dataclass
 class SeedResult:
@@ -74,12 +119,14 @@ def seed_exercises(db: Session) -> SeedResult:
             result.groups_created += 1
 
         for exercise_name in exercise_names:
+            equipment = EQUIPMENT[exercise_name]
             exercise = exercises.get(exercise_name)
             if exercise is None:
-                db.add(Exercise(name=exercise_name, muscle_group_id=group.id))
+                db.add(Exercise(name=exercise_name, muscle_group_id=group.id, equipment=equipment))
                 result.exercises_created += 1
-            elif exercise.muscle_group_id != group.id:
+            elif exercise.muscle_group_id != group.id or exercise.equipment != equipment:
                 exercise.muscle_group_id = group.id
+                exercise.equipment = equipment
                 result.exercises_updated += 1
 
     db.commit()

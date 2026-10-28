@@ -128,7 +128,7 @@ def test_create_workout_set_success(db_session: Session) -> None:
     chest = MuscleGroup(name="Peito")
     db_session.add(chest)
     db_session.flush()
-    bench = Exercise(name="Supino reto", muscle_group_id=chest.id)
+    bench = Exercise(name="Supino reto", muscle_group_id=chest.id, equipment="barbell")
     db_session.add(bench)
     db_session.commit()
 
