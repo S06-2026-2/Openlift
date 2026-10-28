@@ -25,9 +25,21 @@ void main() {
       expect(e.muscleGroup, 'Peito');
     });
 
+    test('lê o equipamento do NIP-101e (FE-05)', () {
+      final e = ExerciseModel.fromJson({
+        'id': 1,
+        'name': 'Supino reto',
+        'muscle_group': {'id': 4, 'name': 'Peito'},
+        'equipment': 'barbell',
+      });
+      expect(e.equipment, 'barbell');
+      expect(e.toJson()['equipment'], 'barbell');
+    });
+
     test('sem grupo cai em "Outros"', () {
       final e = ExerciseModel.fromJson({'id': 1, 'name': 'X'});
       expect(e.muscleGroup, ExerciseModel.fallbackGroup);
+      expect(e.equipment, isNull);
     });
 
     test('exercício sem id ou nome é inválido', () {
@@ -122,7 +134,6 @@ void main() {
         'id': 3,
         'date': '2026-10-13T00:00:00',
         'created_at': '2026-10-13T12:30:00Z',
-        'shared_event_id': null,
         'sets': [
           {'id': 1, 'exercise_id': 1, 'reps': 8, 'weight_kg': '80.00'},
         ],
@@ -131,6 +142,30 @@ void main() {
       expect(parsed.date, DateTime(2026, 10, 13));
       expect(parsed.sets.single.weightKg, 80);
       expect(parsed.createdAt, isNotNull);
+      // Sem os campos de publicação: privado e só local.
+      expect(parsed.visibility, WorkoutVisibility.private);
+      expect(parsed.publishStatus, PublishStatus.local);
+      expect(parsed.dTag, isNull);
+    });
+
+    test('fromJson lê visibilidade, status e d_tag (FE-05)', () {
+      final parsed = WorkoutModel.fromJson({
+        'id': 4,
+        'date': '2026-10-13',
+        'visibility': 'published',
+        'publish_status': 'failed',
+        'd_tag': '7c9e6679-7425-4f1b-9a2e-6a1f0c8d5b34',
+        'sets': <Object>[],
+      });
+
+      expect(parsed.isPublished, isTrue);
+      expect(parsed.publishStatus, PublishStatus.failed);
+      expect(parsed.dTag, '7c9e6679-7425-4f1b-9a2e-6a1f0c8d5b34');
+      // copyWith (edição) preserva a publicação; toJson não a envia.
+      final edited = parsed.copyWith(date: DateTime(2026, 10, 14));
+      expect(edited.dTag, parsed.dTag);
+      expect(edited.isPublished, isTrue);
+      expect(edited.toJson().keys, unorderedEquals(['date', 'sets']));
     });
 
     test('treino sem data é inválido', () {
