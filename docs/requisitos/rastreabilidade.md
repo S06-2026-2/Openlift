@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,9 +8,9 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 10 | 4 | 16 | 10 |
+| RF | 40 | 13 | 4 | 14 | 9 |
 | RNF | 14 | 2 | 6 | 6 | 0 |
-| RN | 9 | 1 | 2 | 5 | 1 |
+| RN | 9 | 3 | 2 | 3 | 1 |
 
 Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md).
 
@@ -32,12 +32,12 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-16 | S | 💤 | — | — | — |
 | RF-17 | S | 💤 | — | — | — |
 | RF-18 | C | 💤 | — | — | — |
-| RF-20 | M | ⬜ S2 | NOSTR-01 #22 (mini-NIP) · S2-03, S2-04 (a criar) | — | Critérios em `docs/qa/sprint-2.md` |
-| RF-21 | M | 🟡 S2 | BE-04 #26 → #45 · S2-05 (a criar) | Campo `visibility` no treino, editável pela API; sem tela no app | `api/tests/test_workouts.py` |
-| RF-22 | S | 💤 | — | — | — |
-| RF-23 | S | ⬜ S2 | S2-04 (a criar) | `NOSTR_RELAYS` em `api/.env.example` | — |
+| RF-20 | M | ✅ | NOSTR-01 #22 · BE-S2-03 #79 → #90 · FE-05 #84 | `WorkoutPublisher` monta e assina 33401 + 1301 no aparelho (`app/lib/features/social/data/workout_publisher.dart`) e envia aos relays (`nostr_relay_service.dart`); o backend registra em `shared_events` | `app/test/features/social/workout_publisher_test.dart`, `nostr_relay_service_test.dart`, `publication_flow_test.dart`; `api/tests/test_workout_publication.py` |
+| RF-21 | M | ✅ | BE-04 #26 → #45 · FE-05 #84 | Seletor Privado / Publicado no formulário, só ida (`workout_form_screen.dart`); `visibility` só muda pela rota de publicação | `publication_flow_test.dart`, `api/tests/test_workouts.py` |
+| RF-22 | S | 🟡 | FE-05 #84 | Resultado por relay e "Tentar novamente" manual no histórico (`publication_widgets.dart`); falta a fila automática quando a rede volta | `publication_flow_test.dart` |
+| RF-23 | S | 🟡 | FE-05 #84 | Lista de relays por `--dart-define=NOSTR_RELAYS` (`app_constants.dart`), padrão do ADR-0007; sem tela de configuração | `nostr_relay_service_test.dart` |
 | RF-24 | M | 🟡 S2 | BE-03 #25 → #44 | `event_id` único em `shared_events`; falta a ingestão | `api/tests/test_exercises.py` (constraints das tabelas novas) |
-| RF-25 | M | 🟡 S2 | BE-04 #26 → #45 · S2-05 (a criar) | Campo `publish_status` (local/published/failed), só o servidor altera; sem tela | `api/tests/test_workouts.py` |
+| RF-25 | M | ✅ | BE-04 #26 → #45 · BE-S2-03 #90 · FE-05 #84 | Status Privado / Publicado / Falha ao publicar em cada treino do histórico, vindo do `publish_status` do backend | `publication_flow_test.dart`, `api/tests/test_workout_publication.py` |
 | RF-26 | C | 💤 | — | — | — |
 | RF-30 | M | ⬜ S3 | — | — | — |
 | RF-31 | M | ⬜ S3 | — | Tela placeholder "Social" (FE-04 #50 → #51) | — |
@@ -74,7 +74,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RNF-09 | ✅ | OPS-01 #31 | Branch protection: PR com 1 aprovação e checks obrigatórios | — |
 | RNF-10 | 🟡 | — | `docker compose up` sobe banco, API e Adminer | Migrations e seed ainda são manuais |
 | RNF-11 | ⬜ S2 | S2-08 (a criar) | — | Captura do evento num cliente de terceiros |
-| RNF-12 | 🟡 S2 | ADR-0009 | Nenhuma coleta de geolocalização no app | Consentimento na primeira publicação (S2-07) e `docs/lgpd.md` |
+| RNF-12 | 🟡 S2 | ADR-0009 · FE-05 #84 | Nenhuma coleta de geolocalização no app; consentimento explícito na 1ª publicação, guardado por conta (`publication_widgets.dart`) | `docs/lgpd.md` |
 | RNF-13 | 🟡 | FE-03 #30 → #41 | "Repetir última" copia a série em 1 toque (teste de widget) | Teste com 3 pessoas fora da equipe |
 | RNF-14 | ⬜ | — | Branch `feat/structured-logging` em andamento, sem PR | Logs JSON correlacionáveis por `event_id` |
 
@@ -82,12 +82,12 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 
 | ID | Status | Issue → PR | Evidência | Falta |
 |---|---|---|---|---|
-| RN-01 | ⬜ S2 | S2-03 (a criar) | O app não salva treino sem série | Bloquear a **publicação** de treino sem série |
+| RN-01 | ✅ | FE-03 #41 · BE-S2-03 #90 · FE-05 #84 | O app não salva nem publica treino sem série; o backend recusa a publicação (422) | — |
 | RN-02 | 💤 | — | — | Depende da detecção de PR (RF-17) |
 | RN-03 | 🟡 | FE-03 #30 → #41 | Volume do histórico ignora aquecimento (`workout_model.dart`, teste "sem aquecimento") | Mesma regra nos endpoints de estatística (RF-54) |
 | RN-04 | ⬜ S4 | — | — | Ranking por semana ISO |
 | RN-05 | ⬜ S4 | — | — | Descartar `created_at` > 15 min no futuro |
 | RN-06 | 🟡 S3 | BE-03 #25 → #44 | Constraint única `uq_likes_event_liker` (evento + pubkey) | Projeção de likes (RF-52) |
 | RN-07 | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | Limites nos schemas da API e nos validadores do app | — (`test_workouts.py`, `workout_screens_test.dart`) |
-| RN-08 | ⬜ S2 | S2-05 (a criar) | — | Republicar treino editado como evento novo |
+| RN-08 | ✅ | BE-S2-03 #90 · FE-05 #84 | Salvar treino publicado pergunta se publica a nova versão: evento novo com o mesmo `d` | — |
 | RN-09 | ⬜ S2 | S2-03 (a criar) | A API já guarda a carga em `weight_kg` | Carga em kg no evento `kind 1301` |
