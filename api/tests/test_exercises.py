@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.domain.models.exercise import Exercise
+from app.domain.models.exercise import EQUIPMENT_VALUES, Exercise
 from app.domain.models.like import Like
 from app.domain.models.muscle_group import MuscleGroup
 from app.domain.models.ranking import RankingEntry
@@ -19,7 +19,7 @@ from app.domain.models.set import WorkoutSet
 from app.domain.models.shared_event import SharedEvent
 from app.domain.models.user import User
 from app.domain.models.workout import Workout
-from app.infra.db.seed import LIBRARY, seed_exercises
+from app.infra.db.seed import EQUIPMENT, LIBRARY, seed_exercises
 
 EXERCISES = "/api/v1/exercises"
 EVENT_ID = "a" * 64
@@ -84,6 +84,49 @@ def test_seed_moves_an_exercise_back_to_its_group(db_session: Session) -> None:
     assert bench.muscle_group.name == "Peito"
 
 
+def test_seed_gives_every_exercise_a_nip101e_equipment(db_session: Session) -> None:
+    seed_exercises(db_session)
+
+    equipment = {e.name: e.equipment for e in db_session.scalars(select(Exercise))}
+
+    assert set(equipment) == set(EQUIPMENT)
+    assert set(equipment.values()) <= set(EQUIPMENT_VALUES)
+    assert equipment["Supino reto"] == "barbell"
+    assert equipment["Rosca alternada"] == "dumbbell"
+    assert equipment["Barra fixa"] == "bodyweight"
+    # Polia/cabo entra como machine: o NIP-101e não tem valor próprio.
+    assert equipment["Tríceps pulley"] == "machine"
+
+
+def test_every_library_exercise_has_an_equipment() -> None:
+    names = {name for group in LIBRARY.values() for name in group}
+    assert names == set(EQUIPMENT)
+
+
+def test_seed_fixes_a_wrong_equipment(db_session: Session) -> None:
+    seed_exercises(db_session)
+    bench = db_session.scalar(select(Exercise).where(Exercise.name == "Supino reto"))
+    assert bench is not None
+    bench.equipment = "machine"
+    db_session.commit()
+
+    result = seed_exercises(db_session)
+
+    assert result.exercises_updated == 1
+    db_session.refresh(bench)
+    assert bench.equipment == "barbell"
+
+
+def test_equipment_outside_the_vocabulary_violates_check(db_session: Session) -> None:
+    group = MuscleGroup(name="Peito")
+    db_session.add(group)
+    db_session.flush()
+    db_session.add(Exercise(name="Supino no cabo", muscle_group_id=group.id, equipment="cable"))
+
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+
+
 # ---------------------------------------------------------------------------
 # Constraints das tabelas novas
 # ---------------------------------------------------------------------------
@@ -116,8 +159,8 @@ def test_exercise_name_is_unique(db_session: Session) -> None:
     db_session.flush()
     db_session.add_all(
         [
-            Exercise(name="Supino reto", muscle_group_id=group.id),
-            Exercise(name="Supino reto", muscle_group_id=group.id),
+            Exercise(name="Supino reto", muscle_group_id=group.id, equipment="barbell"),
+            Exercise(name="Supino reto", muscle_group_id=group.id, equipment="barbell"),
         ]
     )
 
@@ -204,6 +247,8 @@ def test_exercises_list_with_muscle_group(
     bench = next(e for e in body if e["name"] == "Supino reto")
     assert bench["muscle_group"]["name"] == "Peito"
     assert isinstance(bench["muscle_group"]["id"], int)
+    assert bench["equipment"] == "barbell"
+    assert {e["equipment"] for e in body} <= set(EQUIPMENT_VALUES)
     # Ordenado por grupo e depois por nome.
     keys = [(e["muscle_group"]["name"], e["name"]) for e in body]
     assert keys == sorted(keys)

@@ -66,7 +66,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | POST | `/auth/refresh` | Troca o refresh token por um novo par |
 | GET | `/me` | Usuário logado (`id`, `email`, `npub` ou `null`, `created_at`) |
 | POST | `/me/nostr-identity` | Registra o `npub` gerado no app (só chave pública; idempotente; `npub` de outra conta → 409) |
-| GET | `/exercises` | Biblioteca com grupo muscular (`?muscle_group_id=`) |
+| GET | `/exercises` | Biblioteca com grupo muscular e equipamento do NIP-101e (`?muscle_group_id=`) |
 | POST / GET | `/workouts` | Cria treino / histórico paginado (`date_from`, `date_to`, `exercise_id`, `muscle_group_id`, `limit`, `offset`) |
 | GET / PATCH / DELETE | `/workouts/{id}` | Detalha, edita (`sets` enviado substitui todas as séries) e exclui |
 | POST | `/workouts/{id}/sets` | Adiciona uma série |
