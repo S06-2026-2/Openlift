@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,8 +8,8 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 13 | 4 | 14 | 9 |
-| RNF | 14 | 2 | 6 | 6 | 0 |
+| RF | 40 | 13 | 5 | 13 | 9 |
+| RNF | 14 | 2 | 7 | 5 | 0 |
 | RN | 9 | 3 | 2 | 3 | 1 |
 
 Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md).
@@ -36,7 +36,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-21 | M | ✅ | BE-04 #26 → #45 · FE-05 #84 | Seletor Privado / Publicado no formulário, só ida (`workout_form_screen.dart`); `visibility` só muda pela rota de publicação | `publication_flow_test.dart`, `api/tests/test_workouts.py` |
 | RF-22 | S | 🟡 | FE-05 #84 | Resultado por relay e "Tentar novamente" manual no histórico (`publication_widgets.dart`); falta a fila automática quando a rede volta | `publication_flow_test.dart` |
 | RF-23 | S | 🟡 | FE-05 #84 | Lista de relays por `--dart-define=NOSTR_RELAYS` (`app_constants.dart`), padrão do ADR-0007; sem tela de configuração | `nostr_relay_service_test.dart` |
-| RF-24 | M | 🟡 S2 | BE-03 #25 → #44 | `event_id` único em `shared_events`; falta a ingestão | `api/tests/test_exercises.py` (constraints das tabelas novas) |
+| RF-24 | M | 🟡 S2 | BE-03 #25 → #44 · FE-06 #85 | `event_id` único em `shared_events`; o app lê dos relays um evento por `id` (`nostr_relay_service.dart`, `query`); falta a ingestão no backend | `api/tests/test_exercises.py`; `app/test/features/social/nostr_relay_service_test.dart`, `network_workouts_service_test.dart` |
 | RF-25 | M | ✅ | BE-04 #26 → #45 · BE-S2-03 #90 · FE-05 #84 | Status Privado / Publicado / Falha ao publicar em cada treino do histórico, vindo do `publish_status` do backend | `publication_flow_test.dart`, `api/tests/test_workout_publication.py` |
 | RF-26 | C | 💤 | — | — | — |
 | RF-30 | M | ⬜ S3 | — | — | — |
@@ -50,7 +50,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-42 | M | ⬜ S4 | — | — | — |
 | RF-43 | S | ⬜ S4 | — | — | — |
 | RF-50 | M | ⬜ S3 | — | — | — |
-| RF-51 | M | ⬜ S2 | S2-06 (a criar) | — | Critérios em `docs/qa/sprint-2.md` |
+| RF-51 | M | 🟡 S2 | FE-06 #85 | O app verifica `id` e assinatura de todo evento lido antes de exibir (`network_workouts_service.dart`); falta a ingestão no backend (RF-50, S3) | `network_workouts_service_test.dart`, `network_feed_test.dart` (evento adulterado) |
 | RF-52 | M | ⬜ S3 | — | — | — |
 | RF-53 | M | ⬜ S3 | — | — | — |
 | RF-54 | M | ⬜ S4 | — | — | `api/tests/test_stats.py` (só TODOs) |
@@ -64,7 +64,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | ID | Status | Issue → PR | Evidência | Falta |
 |---|---|---|---|---|
 | RNF-01 | 🟡 S2 | OPS-02 #32 → #52 · FE-04 #83 | Gitleaks em todo PR; no app, teste do fluxo completo confere que nenhuma requisição nem `print` contém a chave privada (`nostr_identity_sync_test.dart`) | Teste com `caplog` nos logs do backend (TEST-02 #87) |
-| RNF-02 | ⬜ S2 | S2-06 (a criar) | — | Teste com evento adulterado |
+| RNF-02 | 🟡 S2 | FE-06 #85 | No app, evento adulterado é descartado e contado na aba "Da rede" (`network_workouts_service_test.dart`, `network_feed_test.dart`) | O mesmo na ingestão do backend (S3) |
 | RNF-03 | ⬜ | — | — | Rate limiting nos endpoints públicos (login/cadastro) |
 | RNF-04 | 🟡 | FE-03 #30 → #41 | Série registrada só em estado local, sem rede até salvar | Teste de widget com timing |
 | RNF-05 | ⬜ S3 | — | — | Benchmark do feed |
