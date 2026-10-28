@@ -93,6 +93,15 @@ class MemorySecureStorage extends SecureStorageService {
   Future<String?> readNostrSecret(int userId) async =>
       _values[SecureStorageService.nostrSecretKey(userId)];
 
+  @override
+  Future<void> savePublishConsent(int userId) async {
+    _values[SecureStorageService.publishConsentKey(userId)] = 'true';
+  }
+
+  @override
+  Future<bool> hasPublishConsent(int userId) async =>
+      _values[SecureStorageService.publishConsentKey(userId)] == 'true';
+
   /// Tudo o que está guardado (para os testes de RNF-01 procurarem vazamento).
   Map<String, String> get values => Map.unmodifiable(_values);
 }

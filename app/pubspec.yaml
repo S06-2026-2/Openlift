@@ -21,11 +21,13 @@ dependencies:
   fl_chart: ^0.68.0
   # Protocolo NOSTR (ADR-0003, ADR-0005). Spike do FE-04: chave, assinatura e
   # NIP-19 com bip340 + crypto em Dart puro (rodam iguais na web e no APK),
-  # sem dart_nostr/ndk. Cliente de relay (WebSocket) fica para o FE-05.
+  # sem dart_nostr/ndk.
   bip340: ^0.3.1
   crypto: ^3.0.7
   uuid: ^4.6.0
   unorm_dart: ^0.3.3
+  # Cliente de relay NOSTR (FE-05): WebSocket puro, igual na web e no APK.
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
   flutter_test:
