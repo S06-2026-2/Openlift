@@ -9,6 +9,9 @@ _GENERATOR = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3)
 _NPUB_HRP = "npub"
 _NPUB_LENGTH = 63  # "npub1" + 52 caracteres de dado + 6 de checksum
 
+# Kinds do mini-NIP (docs/nips/openlift-workout-event.md §1), em constante única.
+KIND_WORKOUT_RECORD = 1301
+
 
 def _polymod(values: list[int]) -> int:
     checksum = 1

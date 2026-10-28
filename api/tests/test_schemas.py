@@ -146,13 +146,13 @@ def test_workout_out_serialization() -> None:
         date=date(2026, 9, 17),
         created_at=now,
         sets=[SetOut(id=10, exercise_id=1, reps=10, weight_kg=Decimal("70.0"), rpe=Decimal("8.0"))],
-        shared_event_id=None,
+        d_tag=None,
     )
 
     assert workout_out.id == 1
     assert len(workout_out.sets) == 1
     assert workout_out.sets[0].id == 10
-    assert workout_out.shared_event_id is None
+    assert workout_out.d_tag is None
 
 
 # ---------------------------------------------------------------------------

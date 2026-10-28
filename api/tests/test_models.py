@@ -80,7 +80,7 @@ def test_create_workout_success(db_session: Session) -> None:
     workout = Workout(
         user_id=user.id,
         date=date(2026, 9, 17),
-        shared_event_id=None,
+        d_tag=None,
     )
 
     # Act
@@ -93,7 +93,7 @@ def test_create_workout_success(db_session: Session) -> None:
     assert workout.user_id == user.id
     assert workout.date == date(2026, 9, 17)
     assert workout.created_at is not None
-    assert workout.shared_event_id is None
+    assert workout.d_tag is None
 
 
 def test_workout_foreign_key_violation_raises_integrity_error(db_session: Session) -> None:
