@@ -4,6 +4,8 @@
 //
 // FE-05 — Cada treino mostra o status da publicação no NOSTR (RF-25) e, na
 // sessão, o resultado por relay com "Tentar novamente" (RF-22).
+//
+// FE-06 — Aba provisória "Da rede": treinos lidos dos relays (RF-51).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
+import '../../social/presentation/network_workouts_view.dart';
 import '../../social/presentation/widgets/publication_widgets.dart';
 import '../domain/exercise_model.dart';
 import '../domain/workout_model.dart';
@@ -89,98 +92,121 @@ class WorkoutHistoryScreen extends ConsumerWidget {
         e.id: e,
     };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Treinos'),
-        actions: [
-          IconButton(
-            tooltip: 'Filtrar',
-            onPressed: () => _openFilter(context, ref),
-            icon: Badge(
-              isLabelVisible: filter.isActive,
-              child: const Icon(Icons.tune_rounded, size: 20),
-            ),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Treinos'),
+          bottom: const TabBar(
+            tabs: [Tab(text: 'Histórico'), Tab(text: 'Da rede')],
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go(AppRoutes.newWorkout),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Novo treino'),
-      ),
-      body: workouts.when(
-        loading: () => const LoadingIndicator(message: 'Carregando treinos...'),
-        error: (error, _) => RefreshIndicator(
-          onRefresh: () => ref.refresh(workoutControllerProvider.future),
-          child: ErrorStateView(
-            message: error is ApiException
-                ? error.message
-                : 'Não foi possível carregar seus treinos.',
-            onRetry: () => ref.invalidate(workoutControllerProvider),
-          ),
+          actions: [
+            // O filtro vale só para o histórico.
+            Builder(builder: (context) {
+              final tabs = DefaultTabController.of(context);
+              return ListenableBuilder(
+                listenable: tabs,
+                builder: (context, _) => tabs.index != 0
+                    ? const SizedBox.shrink()
+                    : IconButton(
+                        tooltip: 'Filtrar',
+                        onPressed: () => _openFilter(context, ref),
+                        icon: Badge(
+                          isLabelVisible: filter.isActive,
+                          child: const Icon(Icons.tune_rounded, size: 20),
+                        ),
+                      ),
+              );
+            }),
+            const SizedBox(width: 8),
+          ],
         ),
-        data: (items) {
-          if (items.isEmpty) {
-            return RefreshIndicator(
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.go(AppRoutes.newWorkout),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Novo treino'),
+        ),
+        body: TabBarView(children: [
+          workouts.when(
+            loading: () =>
+                const LoadingIndicator(message: 'Carregando treinos...'),
+            error: (error, _) => RefreshIndicator(
               onRefresh: () => ref.refresh(workoutControllerProvider.future),
-              child: filter.isActive
-                  ? EmptyStateView(
-                      icon: Icons.search_off_rounded,
-                      title: 'Nenhum treino encontrado',
-                      description:
-                          'Nenhum treino bate com os filtros escolhidos.',
-                      actionLabel: 'Limpar filtros',
-                      onAction: () =>
-                          ref.read(workoutFilterProvider.notifier).clear(),
-                    )
-                  : EmptyStateView(
-                      icon: Icons.fitness_center_rounded,
-                      title: 'Nenhum treino ainda',
-                      description: 'Registre seu primeiro treino e acompanhe '
-                          'sua evolução por aqui.',
-                      actionLabel: 'Registrar primeiro treino',
-                      onAction: () => context.go(AppRoutes.newWorkout),
-                    ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => ref.refresh(workoutControllerProvider.future),
-            child: LayoutBuilder(
-              builder: (context, constraints) => ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: pagePadding(constraints, bottom: 96),
-                children: [
-                  SectionLabel(
-                    items.length == 1 ? '1 treino' : '${items.length} treinos',
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < items.length; i++) ...[
-                          if (i > 0) const Divider(),
-                          _WorkoutRow(
-                            workout: items[i],
-                            exercises: exercises,
-                            onTap: items[i].id == null
-                                ? null
-                                : () => context
-                                    .go(AppRoutes.editWorkout(items[i].id!)),
-                            onDelete: () =>
-                                _confirmDelete(context, ref, items[i]),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+              child: ErrorStateView(
+                message: error is ApiException
+                    ? error.message
+                    : 'Não foi possível carregar seus treinos.',
+                onRetry: () => ref.invalidate(workoutControllerProvider),
               ),
             ),
-          );
-        },
+            data: (items) {
+              if (items.isEmpty) {
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      ref.refresh(workoutControllerProvider.future),
+                  child: filter.isActive
+                      ? EmptyStateView(
+                          icon: Icons.search_off_rounded,
+                          title: 'Nenhum treino encontrado',
+                          description:
+                              'Nenhum treino bate com os filtros escolhidos.',
+                          actionLabel: 'Limpar filtros',
+                          onAction: () =>
+                              ref.read(workoutFilterProvider.notifier).clear(),
+                        )
+                      : EmptyStateView(
+                          icon: Icons.fitness_center_rounded,
+                          title: 'Nenhum treino ainda',
+                          description:
+                              'Registre seu primeiro treino e acompanhe '
+                              'sua evolução por aqui.',
+                          actionLabel: 'Registrar primeiro treino',
+                          onAction: () => context.go(AppRoutes.newWorkout),
+                        ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => ref.refresh(workoutControllerProvider.future),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: pagePadding(constraints, bottom: 96),
+                    children: [
+                      SectionLabel(
+                        items.length == 1
+                            ? '1 treino'
+                            : '${items.length} treinos',
+                      ),
+                      const SizedBox(height: 12),
+                      Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < items.length; i++) ...[
+                              if (i > 0) const Divider(),
+                              _WorkoutRow(
+                                workout: items[i],
+                                exercises: exercises,
+                                onTap: items[i].id == null
+                                    ? null
+                                    : () => context.go(
+                                        AppRoutes.editWorkout(items[i].id!)),
+                                onDelete: () =>
+                                    _confirmDelete(context, ref, items[i]),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const NetworkWorkoutsView(),
+        ]),
       ),
     );
   }
