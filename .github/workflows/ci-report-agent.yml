@@ -277,9 +277,11 @@ jobs:
       
 
       - name: Publish Gemini report on PR
+        id: pr_comment
         if: steps.runs.outputs.ready == 'true' && steps.agent.outcome == 'success'
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.GH_PR_COMMENT }}
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         shell: bash
