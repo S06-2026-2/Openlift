@@ -9,7 +9,6 @@ app/ios/.symlinks/
 app/android/.gradle/
 app/**/*.iml
 app/.idea/
-app/web/
 app/.metadata
 
 # ---- Python / FastAPI ----

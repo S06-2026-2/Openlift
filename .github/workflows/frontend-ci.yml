@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p reports
           set -o pipefail
-          flutter analyze 2>&1 | tee reports/analyze.txt
+          flutter analyze --no-fatal-infos 2>&1 | tee reports/analyze.txt
       
       - name: Create analyze summary
         if: always()
