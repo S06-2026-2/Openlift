@@ -67,6 +67,11 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
+      - name: Verify Railway access
+        env:
+            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway status
+
       - name: Redeploy Web Service
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
