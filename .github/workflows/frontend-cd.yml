@@ -75,13 +75,6 @@ jobs:
       - name: Redeploy Web Service
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
-          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
-          RAILWAY_WEB_SERVICE_ID: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
         run: |
-          railway redeploy \
-            --project "$RAILWAY_PROJECT_ID" \
-            --environment "$RAILWAY_ENVIRONMENT_ID" \
-            --service "$RAILWAY_WEB_SERVICE_ID" \
-            --yes
+          railway redeploy --service $openlift-web --yes
 
