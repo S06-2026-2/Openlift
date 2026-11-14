@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - feature/deploy-on-railway
     paths:
       - "app/**"
       - "infra/docker/Dockerfile.web"
@@ -13,6 +12,16 @@ on:
       - ".github/workflows/frontend-cd.yml"
 
   workflow_dispatch:
+    inputs:
+          environment:
+            description: "Ambiente de deploy"
+            required: true
+            type: choice
+            default: staging
+            options:
+              - staging
+              - production
+
 
 permissions:
   contents: read
@@ -69,12 +78,12 @@ jobs:
 
       - name: Verify Railway access
         env:
-            RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN || secrets.RAILWAY_STAGING_TOKEN }}
         run: railway status
 
       - name: Redeploy Web Service
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN || secrets.RAILWAY_STAGING_TOKEN }}
         run: |
           railway redeploy --service openlift-web --yes
 
