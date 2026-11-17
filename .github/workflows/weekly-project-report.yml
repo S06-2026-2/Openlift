@@ -1,0 +1,62 @@
+name: Weekly Project Report
+
+on:
+  schedule:
+    - cron: "0 12 * * 4"
+      timezone: "America/Sao_Paulo"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+
+jobs:
+  collect:
+    name: Collect Weekly GitHub Data
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Collect GitHub data
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/weekly_report/collect.py
+
+      - name: Generate Weekly Report
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/weekly_report/generate.py
+
+      - name: Generate HTML Report
+        run: python scripts/weekly_report/render_email.py
+
+      - name: Publish report to Job Summary
+        run: cat reports/weekly/WEEKLY_REPORT.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Weekly Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-project-report
+          path: reports/weekly/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Send Weekly Report Email
+        env:
+          SMTP_EMAIL: ${{ vars.SMTP_EMAIL }}
+          REPORT_EMAIL_TO: ${{ vars.REPORT_EMAIL_TO }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python scripts/weekly_report/send_email.py
