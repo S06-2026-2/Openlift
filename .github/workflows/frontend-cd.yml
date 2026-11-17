@@ -52,6 +52,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Normalize image name
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "name=ghcr.io/${REPOSITORY,,}-web" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -61,9 +68,8 @@ jobs:
           build-args: |
             APP_VARIANT=${{ matrix.variant }}
           tags: |
-            ghcr.io/${{ github.repository }}-web:${{ matrix.variant }}-${{ github.sha }}
-            ghcr.io/${{ github.repository }}-web:${{ matrix.variant }}-${{ inputs.environment || 'staging' }}
-          labels: ${{ steps.meta.outputs.labels }}
+            ${{ steps.image.outputs.name }}:${{ matrix.variant }}-${{ github.sha }}
+            ${{ steps.image.outputs.name }}:${{ matrix.variant }}-${{ inputs.environment || 'staging' }}
           cache-from: type=gha,scope=web-${{ matrix.variant }}
           cache-to: type=gha,mode=max,scope=web-${{ matrix.variant }}
     
