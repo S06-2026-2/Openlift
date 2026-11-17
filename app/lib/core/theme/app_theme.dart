@@ -5,14 +5,20 @@
 // tamanho e espaçamento, não de cor. Bordas finas no lugar de sombras.
 
 import 'package:flutter/material.dart';
+import '../config/app_variant.dart';
 
 /// Design system do OpenLift com temas claro e escuro.
 class AppTheme {
   AppTheme._();
 
   // Primária = tinta do texto em cada tema.
-  static const Color primaryColor = Color(0xFF18181B); // zinc-900
-  static const Color primaryColorDark = Color(0xFFFAFAFA); // zinc-50
+  static final Color primaryColor = AppVariant.isB
+    ?  const Color(0xFF15803D) // B: verde
+    :  const Color(0xFF18181B); // A: zinc-900
+
+  static final Color primaryColorDark = AppVariant.isB
+    ?  const Color(0xFF4ADE80) // B: verde claro
+    :  const Color(0xFFFAFAFA); // A: zinc-50
 
   static const Color dangerColor = Color(0xFFDC2626);
   static const Color dangerColorDark = Color(0xFFF87171);
@@ -43,7 +49,7 @@ class AppTheme {
 
   /// Tema claro do aplicativo.
   static ThemeData light() => _build(
-        const ColorScheme.light(
+         ColorScheme.light(
           primary: primaryColor,
           onPrimary: Colors.white,
           primaryContainer: lightSurfaceVariant,
@@ -70,15 +76,17 @@ class AppTheme {
 
   /// Tema escuro do aplicativo.
   static ThemeData dark() => _build(
-        const ColorScheme.dark(
+        ColorScheme.dark(
           primary: primaryColorDark,
-          onPrimary: Color(0xFF09090B),
+          onPrimary: AppVariant.isB 
+            ? const Color(0xFF09090B)
+             : const Color(0xFF09090B),
           primaryContainer: darkSurfaceVariant,
           onPrimaryContainer: darkText,
           secondary: darkMuted,
-          onSecondary: Color(0xFF09090B),
+          onSecondary: const Color(0xFF09090B),
           error: dangerColorDark,
-          onError: Color(0xFF09090B),
+          onError: const Color(0xFF09090B),
           surface: darkSurface,
           onSurface: darkText,
           onSurfaceVariant: darkMuted,
@@ -89,8 +97,8 @@ class AppTheme {
           surfaceContainerHighest: darkSurfaceVariant,
           outline: darkBorder,
           outlineVariant: darkBorder,
-          inverseSurface: Color(0xFFFAFAFA),
-          onInverseSurface: Color(0xFF09090B),
+          inverseSurface: const Color(0xFFFAFAFA),
+          onInverseSurface: const Color(0xFF09090B),
         ),
         background: darkBackground,
       );

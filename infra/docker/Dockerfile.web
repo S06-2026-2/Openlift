@@ -9,7 +9,10 @@ RUN flutter pub get
 
 COPY app/ .
 
+ARG APP_VARIANT=A
+
 RUN flutter build web --release \
+    --dart-define=APP_VARIANT=${APP_VARIANT} \
     --dart-define=API_URL=/api/v1
 
 # Stage 2: Nginx runtime

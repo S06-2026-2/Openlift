@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - ops/abEnvironment
     paths:
       - "app/**"
       - "infra/docker/Dockerfile.web"
@@ -29,8 +30,13 @@ permissions:
 
 jobs:
   build:
-    name: Build and Publish Flutter Web
+    name: Build and Publish Flutter Web (${{ matrix.variant }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix: 
+        variant: [a, b]
 
     steps:
       - name: Checkout
@@ -46,14 +52,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}-web
-          tags: |
-            type=sha,prefix=sha-
-            type=raw,value=staging,enable=${{ github.ref == 'refs/heads/main' }}
+      - name: Normalize image name
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "name=ghcr.io/${REPOSITORY,,}-web" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -61,17 +65,21 @@ jobs:
           context: .
           file: infra/docker/Dockerfile.web
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            APP_VARIANT=${{ matrix.variant }}
+          tags: |
+            ghcr.io/${{ github.repository }}-web:${{ matrix.variant }}-${{ github.sha }}
+            ghcr.io/${{ github.repository }}-web:${{ matrix.variant }}-${{ inputs.environment || 'staging' }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web-${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=web-${{ matrix.variant }}
     
     
   deploy:
     name: Deploy Flutter Web to Railway
     needs: build
     runs-on: ubuntu-latest
-
+    if: ${{ false }}
     steps:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
