@@ -52,13 +52,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Normalize image name
-        id: image
-        env:
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          echo "name=ghcr.io/${REPOSITORY,,}-web" >> "$GITHUB_OUTPUT"
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
