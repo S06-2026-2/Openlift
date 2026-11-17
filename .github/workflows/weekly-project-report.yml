@@ -1,9 +1,9 @@
 name: Weekly Project Report
 
 on:
-  push:
-    branches:
-    - ops/weeklyReport
+  schedule:
+    - cron: "0 12 * * 4"
+      timezone: "America/Sao_Paulo"
 
   workflow_dispatch:
 
