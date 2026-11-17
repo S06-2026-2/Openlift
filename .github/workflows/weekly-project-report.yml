@@ -5,6 +5,10 @@ on:
     - cron: "0 12 * * 4"
       timezone: "America/Sao_Paulo"
 
+  push:
+    branches:
+      - ops/weeklyReport
+
   workflow_dispatch:
 
 permissions:
@@ -38,6 +42,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/weekly_report/generate.py
 
+      - name: Generate HTML Report
+        run: python scripts/weekly_report/render_email.py
+
       - name: Publish report to Job Summary
         run: cat reports/weekly/WEEKLY_REPORT.md >> "$GITHUB_STEP_SUMMARY"
 
@@ -48,3 +55,12 @@ jobs:
           path: reports/weekly/
           retention-days: 30
           if-no-files-found: error
+
+      - name: Send Weekly Report Email
+        env:
+          SMTP_EMAIL: ${{ vars.SMTP_EMAIL }}
+          REPORT_EMAIL_TO: ${{ vars.REPORT_EMAIL_TO }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python scripts/weekly_report/send_email.py
