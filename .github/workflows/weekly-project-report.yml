@@ -33,10 +33,18 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python scripts/weekly_report/collect.py
 
-      - name: Upload collected data
+      - name: Generate Weekly Report
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/weekly_report/generate.py
+
+      - name: Publish report to Job Summary
+        run: cat reports/weekly/WEEKLY_REPORT.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Weekly Report
         uses: actions/upload-artifact@v4
         with:
-          name: weekly-project-data
-          path: reports/weekly/weekly-data.json
+          name: weekly-project-report
+          path: reports/weekly/
           retention-days: 30
           if-no-files-found: error
