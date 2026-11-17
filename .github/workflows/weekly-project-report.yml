@@ -5,10 +5,6 @@ on:
     - cron: "0 12 * * 4"
       timezone: "America/Sao_Paulo"
 
-  push:
-    branches:
-      - ops/weeklyReport
-
   workflow_dispatch:
 
 permissions:
