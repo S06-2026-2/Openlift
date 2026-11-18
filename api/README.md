@@ -54,6 +54,8 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `JWT_SECRET` | Assinatura dos tokens. **Troque fora do ambiente local** |
 | `JWT_EXPIRATION_MINUTES` / `JWT_REFRESH_EXPIRATION_DAYS` | Duração do access e do refresh token |
 | `CORS_ORIGIN_REGEX` | Origens liberadas no CORS (padrão: qualquer porta em `localhost`) |
+| `NOSTR_RELAYS` | Relays lidos pelo backend, separados por vírgula (ADR-0007). Sem valor, o backend não lê relay nenhum |
+| `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 
 ## Rotas (`/api/v1`)
 

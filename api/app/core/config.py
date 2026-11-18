@@ -28,6 +28,19 @@ class Settings(BaseSettings):
 
     # Sprint 3 — relays NOSTR (ADR-0007); worker sem Redis (ADR-0011)
     nostr_relays: str | None = None
+    # BE-08 — tempo máximo de espera por mensagem do relay e novas tentativas
+    nostr_relay_timeout_seconds: float = 10.0
+    nostr_relay_max_retries: int = 3
+
+    @property
+    def nostr_relay_urls(self) -> list[str]:
+        """`NOSTR_RELAYS` (separados por vírgula) → lista sem vazios nem repetidos."""
+        urls: list[str] = []
+        for raw in (self.nostr_relays or "").split(","):
+            url = raw.strip()
+            if url and url not in urls:
+                urls.append(url)
+        return urls
 
 
 @lru_cache
