@@ -2,7 +2,7 @@
 
 Regras do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis): **não demonstrar em ambiente de desenvolvimento**, ambiente de demo separado com dados populados, testado no dia anterior, e vídeo de fallback gravado. Wi-Fi de sala de aula já derrubou mais apresentação do que bug.
 
-O roteiro funcional de cada demo (o que mostrar e os critérios) fica em [`docs/qa/`](../qa/); para a Demo 3, ver o [checklist de "publicar em A, ler em B"](../qa/sprint-2.md#checklist-de-validação-manual--demo-3-publicar-em-a-ler-em-b). Este arquivo cobre o **ambiente**.
+O roteiro funcional de cada demo (o que mostrar e os critérios) fica em [`docs/qa/`](../qa/); para a Demo 3, ver o [checklist de "publicar em A, ler em B"](../qa/sprint-2.md#checklist-de-validação-manual--demo-3-publicar-em-a-ler-em-b); para o Auxílio 3, o [checklist de "seguir → feed → curtir"](../qa/sprint-3.md#checklist-de-validação-manual--auxílio-3-seguir--feed--curtir). Este arquivo cobre o **ambiente**.
 
 ## Véspera (D-1)
 
