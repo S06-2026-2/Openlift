@@ -36,16 +36,17 @@ void main() {
     ],
   };
 
-  test('listWorkouts envia o filtro como query params', () async {
+  test('listWorkouts envia o filtro e a página como query params', () async {
     build((_) => jsonResponse([workoutJson]));
 
     final result = await repository.listWorkouts(
       from: DateTime(2026, 10, 1),
       to: DateTime(2026, 10, 31),
       exerciseId: 2,
+      offset: 40,
     );
 
-    expect(result.single.id, 7);
+    expect(result.items.single.id, 7);
     final request = adapter.requests.single;
     expect(request.method, 'GET');
     expect(request.path, '/workouts');
@@ -53,16 +54,33 @@ void main() {
       'date_from': '2026-10-01',
       'date_to': '2026-10-31',
       'exercise_id': 2,
+      'limit': WorkoutRepository.pageSize,
+      'offset': 40,
     });
   });
 
-  test('listWorkouts aceita envelope {items: [...]}', () async {
-    build((_) => jsonResponse({'items': [workoutJson]}));
+  test('listWorkouts lê o envelope paginado da API (FE-09)', () async {
+    build((_) => jsonResponse({
+          'items': [workoutJson],
+          'total': 45,
+          'limit': 20,
+          'offset': 20,
+        }));
 
-    final result = await repository.listWorkouts();
+    final page = await repository.listWorkouts(offset: 20);
 
-    expect(result, hasLength(1));
-    expect(adapter.requests.single.queryParameters, isEmpty);
+    expect(page.items, hasLength(1));
+    expect(page.total, 45);
+    expect(page.hasMore, isTrue);
+  });
+
+  test('lista crua, sem envelope, é uma página só', () async {
+    build((_) => jsonResponse([workoutJson]));
+
+    final page = await repository.listWorkouts();
+
+    expect(page.total, 1);
+    expect(page.hasMore, isFalse);
   });
 
   test('fetchExercises lê a biblioteca', () async {

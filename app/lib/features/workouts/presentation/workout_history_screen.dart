@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../social/presentation/network_workouts_view.dart';
@@ -173,11 +174,17 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: pagePadding(constraints, bottom: 96),
                     children: [
-                      SectionLabel(
-                        items.length == 1
-                            ? '1 treino'
-                            : '${items.length} treinos',
-                      ),
+                      Builder(builder: (context) {
+                        // Total do servidor: inclui páginas não carregadas.
+                        final total = ref
+                            .read(workoutControllerProvider.notifier)
+                            .total;
+                        final count =
+                            total > items.length ? total : items.length;
+                        return SectionLabel(
+                          count == 1 ? '1 treino' : '$count treinos',
+                        );
+                      }),
                       const SizedBox(height: 12),
                       Card(
                         clipBehavior: Clip.antiAlias,
@@ -199,6 +206,12 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      if (ref
+                          .read(workoutControllerProvider.notifier)
+                          .hasMore) ...[
+                        const SizedBox(height: 16),
+                        const _LoadMoreButton(),
+                      ],
                     ],
                   ),
                 ),
@@ -208,6 +221,41 @@ class WorkoutHistoryScreen extends ConsumerWidget {
           const NetworkWorkoutsView(),
         ]),
       ),
+    );
+  }
+}
+
+/// FE-09 — Próxima página do histórico. Falha mostra aviso e mantém a lista.
+class _LoadMoreButton extends ConsumerStatefulWidget {
+  const _LoadMoreButton();
+
+  @override
+  ConsumerState<_LoadMoreButton> createState() => _LoadMoreButtonState();
+}
+
+class _LoadMoreButtonState extends ConsumerState<_LoadMoreButton> {
+  bool _loading = false;
+
+  Future<void> _load() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    try {
+      await ref.read(workoutControllerProvider.notifier).loadMore();
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: 'Carregar mais',
+      icon: Icons.expand_more_rounded,
+      variant: AppButtonVariant.secondary,
+      isLoading: _loading,
+      onPressed: _load,
     );
   }
 }

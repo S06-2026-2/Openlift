@@ -107,6 +107,45 @@ void main() {
       expect(newer, lessThan(older));
     });
 
+    testWidgets('com mais de uma página, "Carregar mais" traz a seguinte (FE-09)',
+        (tester) async {
+      const count = WorkoutRepository.pageSize + 3;
+      final repository = FakeWorkoutRepository(workouts: [
+        for (var i = 1; i <= count; i++)
+          WorkoutModel(
+            id: i,
+            date: DateTime(2026, 10, 31).subtract(Duration(days: i)),
+            sets: const [SetModel(exerciseId: 1, reps: 8, weightKg: 80)],
+          ),
+      ]);
+      await _pumpApp(tester, repository);
+      await _openHistory(tester);
+
+      // O total vem da API, mesmo com só a 1ª página na tela.
+      expect(find.text('$count TREINOS'), findsOneWidget);
+
+      final list = find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(find.text('Carregar mais'), 400,
+          scrollable: list);
+      await tester.tap(find.text('Carregar mais'));
+      await tester.pumpAndSettle();
+
+      expect(repository.listOffsets, [0, WorkoutRepository.pageSize]);
+      // O treino mais antigo, que só existe na 2ª página, aparece.
+      final oldest = DateTime(2026, 10, 31).subtract(const Duration(days: count));
+      final oldestText =
+          '${oldest.day.toString().padLeft(2, '0')}/${oldest.month.toString().padLeft(2, '0')}/${oldest.year}';
+      await tester.scrollUntilVisible(find.text(oldestText), 400,
+          scrollable: list);
+      expect(find.text(oldestText), findsOneWidget);
+      expect(find.text('Carregar mais'), findsNothing);
+    });
+
     testWidgets('estado vazio tem chamada para ação que abre o formulário',
         (tester) async {
       await _pumpApp(tester, FakeWorkoutRepository());
