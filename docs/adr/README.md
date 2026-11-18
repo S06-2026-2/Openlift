@@ -18,6 +18,7 @@ A tabela-resumo vigente fica em [`docs/CONTEXTO.md` §5](../CONTEXTO.md#5-decis�
 | [0008](0008-ia-como-ferramenta-de-desenvolvimento.md) | IA é ferramenta de desenvolvimento, nunca feature | Aceito |
 | [0009](0009-mapa-de-check-in-fora-do-escopo.md) | Mapa de check-in fora do escopo obrigatório | Aceito |
 | [0010](0010-gates-de-qualidade-progressivos.md) | Gates de qualidade progressivos | Aceito |
+| [0011](0011-worker-de-sincronizacao.md) | Worker de sincronização com APScheduler, sem Redis | Aceito |
 
 ## Como escrever um ADR novo
 

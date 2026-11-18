@@ -31,7 +31,6 @@ def test_settings_default_values(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.env == "development"
     assert settings.jwt_secret == "change-me"
     assert settings.jwt_expiration_minutes == 30
-    assert settings.redis_url is None
     assert settings.nostr_relays is None
 
 
@@ -43,7 +42,6 @@ def test_settings_custom_overrides() -> None:
         env="production",
         jwt_secret="super-secret-key-123",
         jwt_expiration_minutes=60,
-        redis_url="redis://localhost:6379/0",
         nostr_relays="wss://relay.damus.io",
     )
 
@@ -51,7 +49,6 @@ def test_settings_custom_overrides() -> None:
     assert settings.env == "production"
     assert settings.jwt_secret == "super-secret-key-123"
     assert settings.jwt_expiration_minutes == 60
-    assert settings.redis_url == "redis://localhost:6379/0"
     assert settings.nostr_relays == "wss://relay.damus.io"
 
 

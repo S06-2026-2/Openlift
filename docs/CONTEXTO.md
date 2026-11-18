@@ -137,6 +137,7 @@ Estas decisões **não se reabrem sem discussão no grupo**. Cada uma vira um ar
 | **008** | **IA é ferramenta de desenvolvimento, nunca feature do produto.** Estratégia em camadas gratuitas; skills versionadas como markdown em `.agents/skills/` (agnóstico de ferramenta), com `AGENTS.md` na raiz | Não há plano pago no time. Markdown versionado funciona em Claude Code, Gemini, Copilot e Cline sem reescrever nada |
 | **009** | **Mapa de check-in em academia está fora do escopo obrigatório**, documentado como evolução futura | Não está na fonte de verdade; é uma frente inteira nova num front-end já reconhecido como gargalo; e carrega peso de LGPD com geolocalização. Vira capítulo de "evolução futura" na defesa, que é melhor do que um mapa meio pronto |
 | **010** | **Gates de qualidade progressivos:** cobertura informativa até 29/10, bloqueante em 60% a partir da Sprint 3, 70% no congelamento | Prometer 80% e entregar 55% é pior que prometer 70% e bater |
+| **011** | **Worker de sincronização com APScheduler**, em processo próprio com a mesma imagem da API (`python -m app.worker`), intervalo por variável de ambiente. **Sem Redis nem Celery**; `/stats` consulta o Postgres direto | Volume da turma; trabalho periódico e idempotente, não fila; cada serviço a mais no compose e no Railway custa horas que o front precisa |
 
 ---
 
@@ -329,7 +330,7 @@ Pendências novas de DevOps, levantadas na Sprint 1:
 | 4 | Gerência de estado no Flutter | Riverpod, já previsto no roadmap. Não gastar mais de 1 h nisso; ambos funcionam | Front-end | Resolvida na prática: Riverpod em uso desde o FE-01 (#39) |
 | 5 | Onde hospedar staging | Fly.io, Railway, Oracle Cloud Free Tier ou VPS da equipe | DevOps | Aberta — a imagem já é publicada no GHCR (#49); falta o servidor (#16) |
 | 6 | Relay próprio é obrigatório ou stretch? | Stretch da Sprint 4 — não bloqueia nada | Time | Aberta — o ADR-0007 já prevê o `strfry` a partir da Sprint 4 |
-| 7 | Worker de sincronização: APScheduler ou Celery + Redis? | APScheduler, se o volume for o da turma. Celery + Redis é infra a mais para manter | Back-end | Aberta — decidir antes da Sprint 3 |
+| 7 | Worker de sincronização: APScheduler ou Celery + Redis? | APScheduler, se o volume for o da turma. Celery + Redis é infra a mais para manter | Back-end | **Resolvida** em BE-07 (#106): [ADR-0011](adr/0011-worker-de-sincronizacao.md) — APScheduler em processo próprio, sem Redis |
 | 8 | Modo "relay da turma" com allowlist para a demo final | Sim — reduz drasticamente o risco de conteúdo inadequado aparecer na apresentação | Time | Aberta |
 
 ---
