@@ -68,3 +68,15 @@ Use ao revisar código que **monta, assina, publica ou lê** eventos (adapter de
 cd .agents/skills/validar-evento-nostr/examples
 python validar_evento.py evento-exemplo.json
 ```
+
+### Vetores de teste
+
+[`examples/vetores/`](examples/vetores/) guarda eventos `kind 1301` para conferir validadores (o script acima, o app, o futuro worker de ingestão):
+
+| Arquivo | O que é | Resultado esperado |
+|---|---|---|
+| `valido.json` | Cópia de `docs/nips/examples/workout-record.json`, assinado de verdade | ✅ válido |
+| `adulterado-conteudo.json` | Carga de uma série trocada para 800 kg, `id` antigo | ❌ `id` não confere |
+| `adulterado-assinatura.json` | Mesma troca, `id` recalculado, `sig` antiga | ❌ assinatura inválida (o `id` confere) |
+
+Os testes que usam esses vetores: `api/tests/test_validar_evento_skill.py` (roda este script; a parte de assinatura exige `coincurve`) e `app/test/core/nostr/skill_vectors_test.dart` (verificação Schnorr sempre ativa). Se o exemplo do mini-NIP mudar, regenere os três a partir dele.
