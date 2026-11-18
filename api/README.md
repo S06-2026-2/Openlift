@@ -25,6 +25,14 @@ docker compose run --rm api python -m app.infra.db.seed
 
 Cria 10 grupos musculares (peito, costas, ombros, bíceps, tríceps, quadríceps, posterior, glúteos, panturrilha, abdômen) e 40 exercícios. É **idempotente**: pode rodar quantas vezes quiser, nunca duplica e corrige o grupo de um exercício que tenha mudado. A lista fica em `app/infra/db/seed.py`.
 
+## Worker de sincronização NOSTR
+
+```bash
+docker compose run --rm api python -m app.worker
+```
+
+Processo separado da API (ADR-0011: APScheduler, sem Redis). A cada `NOSTR_SYNC_INTERVAL_SECONDS` ele lê dos relays de `NOSTR_RELAYS` os likes (`kind 7`, NIP-25) sobre os treinos publicados e projeta na tabela `likes`. Só entra evento com assinatura verificada (RF-51); um like por pessoa por treino (RN-06); `content` `"-"` (dislike) é ignorado. A tabela é cache: apagar e rodar o worker de novo reconstrói a mesma contagem (ADR-0004). O serviço `worker` do `docker compose` entra no OPS-07.
+
 ## Migrations
 
 ```bash
@@ -55,6 +63,7 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `JWT_EXPIRATION_MINUTES` / `JWT_REFRESH_EXPIRATION_DAYS` | Duração do access e do refresh token |
 | `CORS_ORIGIN_REGEX` | Origens liberadas no CORS (padrão: qualquer porta em `localhost`) |
 | `NOSTR_RELAYS` | Relays lidos pelo backend, separados por vírgula (ADR-0007). Sem valor, o backend não lê relay nenhum |
+| `NOSTR_SYNC_INTERVAL_SECONDS` | Intervalo entre ciclos do worker (`python -m app.worker`), mínimo 10, padrão 300 |
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 
 ## Rotas (`/api/v1`)

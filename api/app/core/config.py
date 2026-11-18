@@ -7,6 +7,7 @@ Sprint 3: NOSTR_RELAYS (lista configurável, sem hardcode). Sem Redis (ADR-0011)
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
     # BE-08 — tempo máximo de espera por mensagem do relay e novas tentativas
     nostr_relay_timeout_seconds: float = 10.0
     nostr_relay_max_retries: int = 3
+    # BE-09 — intervalo do worker de sincronização (ADR-0011)
+    nostr_sync_interval_seconds: int = Field(default=300, ge=10)
 
     @property
     def nostr_relay_urls(self) -> list[str]:
