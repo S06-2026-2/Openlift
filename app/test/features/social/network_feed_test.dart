@@ -105,7 +105,7 @@ void main() {
     expect(find.text('0 TREINOS NA REDE'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), npubA);
-    await tester.tap(find.byTooltip('Adicionar'));
+    await tester.tap(find.byTooltip('Seguir'));
     await tester.pumpAndSettle();
 
     expect(find.text('1 TREINO NA REDE'), findsOneWidget);
@@ -187,7 +187,7 @@ void main() {
     await device.openNetworkTab(tester);
 
     await tester.enterText(find.byType(TextField), 'npub1naoexiste');
-    await tester.tap(find.byTooltip('Adicionar'));
+    await tester.tap(find.byTooltip('Seguir'));
     await tester.pumpAndSettle();
 
     expect(find.text('Isso não é um npub válido.'), findsOneWidget);
@@ -205,13 +205,15 @@ void main() {
     await device.openNetworkTab(tester);
 
     expect(find.textContaining('conectar aos relays NOSTR'), findsOneWidget);
+    // Só a leitura de quem a pessoa segue: sem ela, os treinos nem são pedidos.
     expect(relays.queries, hasLength(1));
 
     relays.readStatus.clear();
     await tester.tap(find.text('Tentar novamente'));
     await tester.pumpAndSettle();
 
-    expect(relays.queries, hasLength(2));
+    // De novo a lista de seguidos, e agora os treinos.
+    expect(relays.queries, hasLength(3));
     expect(find.text('0 TREINOS NA REDE'), findsOneWidget);
   });
 

@@ -2,8 +2,9 @@
 // NOSTR, já com a assinatura verificada (RF-51, RNF-02).
 //
 // Mostra o `npub` deste aparelho (identificador público, para outra pessoa
-// colar) e deixa adicionar o `npub` de alguém para ver os treinos dela —
-// o teste da Demo 3: publicar no dispositivo A e ver no B.
+// colar) e deixa seguir alguém pelo `npub` para ver os treinos dela. Desde o
+// NOSTR-04, seguir publica a contact list (kind 3) e vale em qualquer
+// aparelho com a mesma identidade.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,7 +45,7 @@ class NetworkWorkoutsView extends ConsumerWidget {
           children: [
             if (own != null) _OwnIdentityCard(npub: own.npub),
             const SizedBox(height: 12),
-            const _AddPersonField(),
+            const _FollowField(),
             const SizedBox(height: 20),
             ...feed.when(
               skipLoadingOnRefresh: false,
@@ -65,7 +66,9 @@ class NetworkWorkoutsView extends ConsumerWidget {
                   label: 'Tentar novamente',
                   icon: Icons.refresh_rounded,
                   variant: AppButtonVariant.secondary,
-                  onPressed: () => ref.invalidate(networkFeedProvider),
+                  onPressed: () => ref
+                    ..invalidate(followingProvider)
+                    ..invalidate(networkFeedProvider),
                 ),
               ],
               data: (data) => _feedChildren(context, data, own?.publicKeyHex),
@@ -104,8 +107,8 @@ class NetworkWorkoutsView extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Text(
-            'Nenhum treino publicado ainda. Publique um treino ou adicione '
-            'o npub de alguém.',
+            'Nenhum treino publicado ainda. Publique um treino ou siga '
+            'alguém pelo npub.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -179,16 +182,17 @@ class _OwnIdentityCard extends StatelessWidget {
   }
 }
 
-class _AddPersonField extends ConsumerStatefulWidget {
-  const _AddPersonField();
+class _FollowField extends ConsumerStatefulWidget {
+  const _FollowField();
 
   @override
-  ConsumerState<_AddPersonField> createState() => _AddPersonFieldState();
+  ConsumerState<_FollowField> createState() => _FollowFieldState();
 }
 
-class _AddPersonFieldState extends ConsumerState<_AddPersonField> {
+class _FollowFieldState extends ConsumerState<_FollowField> {
   final _controller = TextEditingController();
   String? _error;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -196,16 +200,30 @@ class _AddPersonFieldState extends ConsumerState<_AddPersonField> {
     super.dispose();
   }
 
-  void _add() {
+  Future<void> _follow() async {
+    if (_busy) return;
+    setState(() => _busy = true);
     final error =
-        ref.read(followedNpubsProvider.notifier).add(_controller.text);
-    setState(() => _error = error);
+        await ref.read(followingProvider.notifier).follow(_controller.text);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _error = error;
+    });
     if (error == null) _controller.clear();
+  }
+
+  Future<void> _unfollow(String pubkey) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await ref.read(followingProvider.notifier).unfollow(pubkey);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final followed = ref.watch(followedNpubsProvider);
+    final following = ref.watch(followingProvider).valueOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,31 +231,46 @@ class _AddPersonFieldState extends ConsumerState<_AddPersonField> {
         TextField(
           controller: _controller,
           autocorrect: false,
+          enabled: !_busy,
           textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _add(),
+          onSubmitted: (_) => _follow(),
           decoration: InputDecoration(
-            labelText: 'Ver treinos de outra pessoa',
+            labelText: 'Seguir pessoa',
             hintText: 'Cole o npub dela',
             errorText: _error,
-            suffixIcon: IconButton(
-              tooltip: 'Adicionar',
-              icon: const Icon(Icons.person_add_alt_rounded, size: 20),
-              onPressed: _add,
-            ),
+            suffixIcon: _busy
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    tooltip: 'Seguir',
+                    icon: const Icon(Icons.person_add_alt_rounded, size: 20),
+                    onPressed: _follow,
+                  ),
           ),
         ),
-        if (followed.isNotEmpty) ...[
+        if (following != null && !following.isEmpty) ...[
           const SizedBox(height: 8),
+          Text(
+            following.pubkeys.length == 1
+                ? 'Seguindo 1 pessoa'
+                : 'Seguindo ${following.pubkeys.length} pessoas',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             runSpacing: 4,
             children: [
-              for (final npub in followed)
+              for (final pubkey in following.pubkeys)
                 InputChip(
-                  label: Text(shortNpub(npub)),
-                  onDeleted: () =>
-                      ref.read(followedNpubsProvider.notifier).remove(npub),
-                  deleteButtonTooltipMessage: 'Remover',
+                  label: Text(shortNpub(Nip19.encodeNpub(pubkey))),
+                  onDeleted: () => _unfollow(pubkey),
+                  deleteButtonTooltipMessage: 'Deixar de seguir',
                 ),
             ],
           ),
