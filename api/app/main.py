@@ -15,6 +15,15 @@ from app.core.config import get_settings
 from app.core.database import engine
 from app.core.errors import register_exception_handlers
 
+import logging
+from app.core.logging import configure_logging
+
+configure_logging()
+
+logger = logging.getLogger(__name__)
+
+logger.info("OpenLift API logging initialized")
+
 app = FastAPI(
     title="OpenLift API",
     version="0.1.0",

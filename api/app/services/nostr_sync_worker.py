@@ -37,6 +37,8 @@ from app.domain.models.like import Like
 from app.domain.models.shared_event import SharedEvent
 from app.infra.nostr.relay_client import Event, Filter, RelayClient
 
+from app.core.logging import event_id_context
+
 logger = logging.getLogger("openlift.worker")
 
 # Ids por filtro `#e`: relays costumam recusar filtros muito grandes.
@@ -80,12 +82,23 @@ def project_likes(db: Session, reactions: Iterable[Event], known_event_ids: set[
     for reaction in reactions:
         if reaction.get("kind") != KIND_REACTION or reaction.get("content") == DISLIKE:
             continue
+
         target = target_event_id(reaction)
         if target not in known_event_ids:
             continue
+
         assert target is not None
+
+        token = event_id_context.set(reaction["id"])
+
+        try:
+            logger.debug("Processando reação NOSTR")
+        finally:
+            event_id_context.reset(token)
+
         key = (target, reaction["pubkey"])
         created_at = reaction["created_at"]
+
         if key not in earliest or created_at < earliest[key]:
             earliest[key] = created_at
     if not earliest:
