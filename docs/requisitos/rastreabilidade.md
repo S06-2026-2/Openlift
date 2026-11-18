@@ -12,7 +12,7 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 | RNF | 14 | 2 | 7 | 5 | 0 |
 | RN | 9 | 3 | 2 | 3 | 1 |
 
-Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md).
+Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md), e os da Sprint 3 em [`docs/qa/sprint-3.md`](../qa/sprint-3.md).
 
 ## Funcionais
 
