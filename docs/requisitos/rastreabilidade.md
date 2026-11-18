@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,7 +8,7 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 13 | 5 | 13 | 9 |
+| RF | 40 | 14 | 5 | 12 | 9 |
 | RNF | 14 | 2 | 7 | 5 | 0 |
 | RN | 9 | 3 | 2 | 3 | 1 |
 
@@ -39,7 +39,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-24 | M | 🟡 S2 | BE-03 #25 → #44 · FE-06 #85 | `event_id` único em `shared_events`; o app lê dos relays um evento por `id` (`nostr_relay_service.dart`, `query`); falta a ingestão no backend | `api/tests/test_exercises.py`; `app/test/features/social/nostr_relay_service_test.dart`, `network_workouts_service_test.dart` |
 | RF-25 | M | ✅ | BE-04 #26 → #45 · BE-S2-03 #90 · FE-05 #84 | Status Privado / Publicado / Falha ao publicar em cada treino do histórico, vindo do `publish_status` do backend | `publication_flow_test.dart`, `api/tests/test_workout_publication.py` |
 | RF-26 | C | 💤 | — | — | — |
-| RF-30 | M | ⬜ S3 | — | — | — |
+| RF-30 | M | ✅ | NOSTR-04 #107 | Contact list `kind 3` (NIP-02) lida do relay e republicada inteira a cada mudança, assinada no aparelho (`app/lib/features/social/domain/contact_list.dart`, `data/follow_service.dart`); seguir e deixar de seguir na aba "Da rede" | `app/test/features/social/contact_list_test.dart`, `follow_flow_test.dart` |
 | RF-31 | M | ⬜ S3 | — | Tela placeholder "Social" (FE-04 #50 → #51) | — |
 | RF-32 | M | ⬜ S3 | — | Tabela `likes` (BE-03 #44) | — |
 | RF-33 | S | 💤 | — | — | — |
