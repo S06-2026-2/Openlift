@@ -2,7 +2,7 @@
 
 Sprint 1: DATABASE_URL, ENV.
 Sprint 2: JWT_SECRET, JWT_EXPIRATION_MINUTES.
-Sprint 4: NOSTR_RELAYS (lista configurável, sem hardcode), REDIS_URL.
+Sprint 3: NOSTR_RELAYS (lista configurável, sem hardcode). Sem Redis (ADR-0011).
 """
 
 from functools import lru_cache
@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     # BE-02 — origens liberadas no CORS (Flutter web em localhost:<porta qualquer>)
     cors_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
-    # Sprint 4-5 — opcionais até os workers existirem
-    redis_url: str | None = None
+    # Sprint 3 — relays NOSTR (ADR-0007); worker sem Redis (ADR-0011)
     nostr_relays: str | None = None
 
 

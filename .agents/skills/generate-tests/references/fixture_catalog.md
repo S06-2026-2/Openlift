@@ -103,4 +103,3 @@ These will be needed when implementing social features:
 | `mock_relay_responses` | 4 | Pre-recorded WebSocket messages simulating NOSTR relay (NIP-01, NIP-25) |
 | `sample_shared_event` | 4 | A `SharedEvent` linked to a workout and a NOSTR event ID |
 | `sample_likes` | 4 | A set of `Like` entries for ranking/score tests |
-| `redis_mock` | 5 | Mock Redis client for cache-dependent tests (heatmap) |
