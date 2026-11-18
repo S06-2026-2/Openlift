@@ -6,6 +6,7 @@
 - erros sempre no formato {"detail": "...", "code": "..."} (app/core/errors.py).
 """
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
