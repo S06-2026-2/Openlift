@@ -18,6 +18,9 @@ paths = [
   # id, sig), assinados com chave descartável que nunca foi salva. A regra
   # generic-api-key confunde o campo "pubkey" da NIP-01 com segredo.
   '''^docs/nips/examples/[^/]+\.json$''',
+  # Vetores da skill validar-evento-nostr: cópia do exemplo acima e versões
+  # adulteradas dele (mesmo dado público, nenhuma chave privada).
+  '''^\.agents/skills/validar-evento-nostr/examples/vetores/[^/]+\.json$''',
 ]
 
 regexes = [
