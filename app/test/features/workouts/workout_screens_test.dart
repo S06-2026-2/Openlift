@@ -323,6 +323,20 @@ void main() {
       expect(repository.created, isEmpty);
     });
 
+    testWidgets('RPE 0 é recusado com "De 1 a 10" (FE-09)', (tester) async {
+      final repository = FakeWorkoutRepository();
+      await _pumpApp(tester, repository);
+      await _openNewWorkout(tester);
+
+      await _addExercise(tester, 'Supino reto');
+      await _fillRow(tester, 0, reps: '8', weight: '80', rpe: '0');
+      await tester.tap(find.text('Salvar treino'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('De 1 a 10'), findsOneWidget);
+      expect(repository.created, isEmpty);
+    });
+
     testWidgets('exatamente 1000 kg e 500 reps são aceitos', (tester) async {
       final repository = FakeWorkoutRepository();
       await _pumpApp(tester, repository);
