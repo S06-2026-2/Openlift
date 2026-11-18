@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -25,9 +25,9 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-05 | S | 💤 | — | — | — |
 | RF-10 | M | ✅ | BE-03 #25 → #44 · FE-03 #30 → #41 | `api/app/infra/db/seed.py`, `api/app/api/v1/exercises.py`, `app/lib/features/workouts/presentation/widgets/exercise_picker_sheet.dart` | `api/tests/test_exercises.py`, `app/test/features/workouts/workout_screens_test.dart` |
 | RF-11 | S | 💤 | — | — | — |
-| RF-12 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `api/app/services/workout_service.py`, `api/app/api/v1/workouts.py`, `app/lib/features/workouts/presentation/workout_form_screen.dart` | `api/tests/test_workouts.py`, `app/test/features/workouts/` |
+| RF-12 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 · FE-09 #114 | `api/app/services/workout_service.py`, `api/app/api/v1/workouts.py`, `app/lib/features/workouts/presentation/workout_form_screen.dart`; RPE de 1 a 10 no app e na API (`workout_validators.dart`) | `api/tests/test_workouts.py`, `app/test/features/workouts/` ("RPE 0 é recusado") |
 | RF-13 | S | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `set_type` em `api/app/domain/models/set.py`; seletor de tipo no formulário | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("tipo da série") |
-| RF-14 | M | 🟡 | BE-04 #26 → #45 · FE-03 #30 → #41 | API filtra por data, exercício e grupo muscular; o app filtra só por data e exercício | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("filtro por exercício") |
+| RF-14 | M | 🟡 | BE-04 #26 → #45 · FE-03 #30 → #41 · FE-09 #114 | API filtra por data, exercício e grupo muscular e pagina com `limit`/`offset`; o app filtra só por data e exercício e carrega as páginas seguintes com "Carregar mais" | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("filtro por exercício", "Carregar mais"), `workout_controller_test.dart` (paginação) |
 | RF-15 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `PATCH`/`DELETE /workouts/{id}`; edição e exclusão no histórico | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("edição", "excluir") |
 | RF-16 | S | 💤 | — | — | — |
 | RF-17 | S | 💤 | — | — | — |
