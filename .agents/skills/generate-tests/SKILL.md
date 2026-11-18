@@ -27,7 +27,7 @@ This skill covers **only the Python/FastAPI backend**.
 - Services: `api/app/services/` (auth_service.py, workout_service.py, stats_service.py, ranking_service.py, nostr_sync_worker.py)
 - Domain models: `api/app/domain/models/` (user.py, workout.py, set.py, nostr_identity.py, exercise.py, muscle_group.py, like.py, ranking.py, shared_event.py)
 - Database: `api/app/core/database.py` (Base declarative, get_db dependency, engine)
-- Settings: `api/app/core/config.py` (pydantic-settings: database_url, jwt_secret, redis_url, nostr_relays)
+- Settings: `api/app/core/config.py` (pydantic-settings: database_url, jwt_secret, nostr_relays)
 - Security: `api/app/core/security.py` (password hashing, JWT creation/validation)
 - Pytest config: `api/pyproject.toml` (testpaths = ["tests"], coverage source = ["app"], omit main.py)
 

@@ -1,5 +1,5 @@
 # Orquestração local: API + banco de dados (Sprint 1).
-# Redis + worker (Sprint 4) entram aqui quando o compartilhamento NOSTR existir.
+# O worker de sincronização NOSTR entra aqui no OPS-07 (ADR-0011: sem Redis).
 
 services:
   db:
@@ -44,8 +44,8 @@ services:
       db:
         condition: service_healthy
 
-# TODO(Sprint 4): service `redis`  — cache e fila do worker de sincronização NOSTR
-# TODO(Sprint 4): service `worker` — mesma imagem da API, comando roda nostr_sync_worker
+# OPS-07: service `worker` — mesma imagem da API, comando `python -m app.worker`
+# (APScheduler; ADR-0011 decidiu sem Redis nem Celery)
 
 volumes:
   db_data:
