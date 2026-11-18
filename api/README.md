@@ -84,6 +84,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | PATCH / DELETE | `/workouts/{id}/sets/{set_id}` | Edita ou remove uma série |
 | POST | `/workouts/{id}/publication` | O app avisa que publicou o `kind 1301` (`event_id`, `pubkey`, `d_tag`): treino vira `published`. Idempotente por `event_id`; `pubkey` diferente do `npub` registrado → 403; sem série → 422 (RN-01); republicar após edição = `event_id` novo com o mesmo `d_tag` (RN-08) |
 | POST | `/workouts/{id}/publication-failure` | O app avisa que nenhum relay aceitou (`event_id`, `pubkey`): treino vira `failed`. Idempotente |
+| GET | `/social/likes` | Curtidas por treino publicado (`?event_ids=a&event_ids=b`, até 100): `[{event_id, count, liked_by_me}]`. Vem do cache `likes` do worker (pode atrasar um ciclo); id fora do formato → 422 `invalid_event_id`; mais de 100 → 422 `too_many_event_ids` |
 
 Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.
 
