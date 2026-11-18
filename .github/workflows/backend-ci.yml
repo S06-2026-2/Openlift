@@ -140,7 +140,7 @@ jobs:
         run: |
           set -o pipefail
           pytest \
-            --cov=app \ 
+            --cov=app \
             --cov-fail-under=60 \
             --cov-report=term-missing \
             --cov-report=xml:reports/coverage.xml \
