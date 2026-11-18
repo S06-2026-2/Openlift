@@ -1,11 +1,12 @@
-<<<<<<< HEAD
-"""Structured JSON logging for OpenLift."""
 
 import json
 import logging
 import re
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
+
+import structlog
 
 event_id_context: ContextVar[str | None] = ContextVar(
     "event_id",
@@ -20,23 +21,56 @@ PRIVATE_KEY_PATTERN = re.compile(
 
 EVENT_ID_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
 
+
 def redact_sensitive_data(value: str) -> str:
+    """Remove possíveis chaves privadas de mensagens de log."""
     return PRIVATE_KEY_PATTERN.sub("[REDACTED]", value)
 
 
+def sanitize_value(value: Any) -> Any:
+    """Sanitiza recursivamente valores presentes nos logs."""
+    if isinstance(value, str):
+        return redact_sensitive_data(value)
+
+    if isinstance(value, dict):
+        return {
+            str(key): sanitize_value(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, list | tuple):
+        return [sanitize_value(item) for item in value]
+
+    return value
+
+
 class JsonFormatter(logging.Formatter):
+    """Formata registros do logging padrão e structlog como JSON."""
+
     def format(self, record: logging.LogRecord) -> str:
-        data = {
+        data: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(
                 record.created,
-                tz=timezone.utc,
+                tz=UTC,
             ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": redact_sensitive_data(
-                record.getMessage()
-            ),
         }
+
+        message = record.getMessage()
+
+        try:
+            parsed = json.loads(message)
+        except (json.JSONDecodeError, TypeError):
+            parsed = None
+
+        if isinstance(parsed, dict):
+            # Evita sobrescrever os metadados do logger.
+            for key, value in parsed.items():
+                if key not in {"timestamp", "level", "logger"}:
+                    data[key] = sanitize_value(value)
+        else:
+            data["message"] = redact_sensitive_data(message)
 
         event_id = getattr(record, "event_id", None)
 
@@ -46,6 +80,8 @@ class JsonFormatter(logging.Formatter):
         if event_id is not None:
             event_id_value = str(event_id)
 
+            # Preserva apenas IDs explicitamente fornecidos
+            # pelo contexto NOSTR, não hexadecimais arbitrários.
             if EVENT_ID_PATTERN.fullmatch(event_id_value):
                 data["event_id"] = event_id_value.lower()
             else:
@@ -54,9 +90,8 @@ class JsonFormatter(logging.Formatter):
                 )
 
         if record.exc_info:
-            exception = self.formatException(record.exc_info)
             data["exception"] = redact_sensitive_data(
-                exception
+                self.formatException(record.exc_info)
             )
 
         if record.stack_info:
@@ -68,40 +103,29 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging() -> None:
-    handler = logging.StreamHandler()
-    handler.setFormatter(JsonFormatter())
-
+    """Configura logging JSON para Python e structlog."""
     root = logging.getLogger()
 
-    for existing in root.handlers[:]:
-        root.removeHandler(existing)
+    # Preserva os handlers existentes, inclusive o caplog
+    # utilizado pelo pytest.
+    if not any(
+        isinstance(handler.formatter, JsonFormatter)
+        for handler in root.handlers
+    ):
+        handler = logging.StreamHandler()
+        handler.setFormatter(JsonFormatter())
+        root.addHandler(handler)
 
-    root.addHandler(handler)
     root.setLevel(logging.INFO)
-=======
-import logging
-import sys
-
-import structlog
-
-
-def configure_logging() -> None:
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=logging.INFO,
-        force=True,
-    )
 
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso", utc=True),
+            structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
         logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=False,
     )
->>>>>>> cf9920b (feat: adding logging for requestd)

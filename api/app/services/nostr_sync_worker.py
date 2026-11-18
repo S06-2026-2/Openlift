@@ -32,12 +32,11 @@ from typing import Any
 from sqlalchemy import select, tuple_
 from sqlalchemy.orm import Session
 
+from app.core.logging import event_id_context
 from app.core.nostr import KIND_REACTION, KIND_WORKOUT_RECORD
 from app.domain.models.like import Like
 from app.domain.models.shared_event import SharedEvent
 from app.infra.nostr.relay_client import Event, Filter, RelayClient
-
-from app.core.logging import event_id_context
 
 logger = logging.getLogger("openlift.worker")
 
