@@ -3,14 +3,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openlift/core/storage/secure_storage_service.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
+import 'package:openlift/features/social/data/nostr_relay_service.dart';
 import 'package:openlift/main.dart';
 
 import 'helpers/fake_auth_repository.dart';
+import 'helpers/fake_http_adapter.dart';
+import 'helpers/fake_nostr_relay_service.dart';
 
 Widget _app(FakeAuthRepository repository) {
   return ProviderScope(
-    overrides: [authRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      authRepositoryProvider.overrideWithValue(repository),
+      // A aba Social lê os relays (FE-07): nada de rede nem plugin no teste.
+      secureStorageServiceProvider.overrideWithValue(MemorySecureStorage()),
+      nostrRelayServiceProvider.overrideWithValue(FakeNostrRelayService()),
+    ],
     child: const OpenLiftApp(),
   );
 }
@@ -81,6 +90,6 @@ void main() {
 
     await tester.tap(find.text('Social'));
     await tester.pumpAndSettle();
-    expect(find.text('Feed social em breve'), findsOneWidget);
+    expect(find.text('Você ainda não segue ninguém'), findsOneWidget);
   });
 }

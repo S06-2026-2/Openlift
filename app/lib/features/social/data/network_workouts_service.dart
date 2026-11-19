@@ -4,6 +4,11 @@
 // 33401) dos autores: a identidade deste aparelho primeiro, depois quem a
 // pessoa adicionou. Todo evento tem `id` e assinatura verificados antes de
 // virar treino; o inválido é descartado e contado, nunca "consertado".
+//
+// FE-07: o feed usa o mesmo caminho, em páginas por `until` (NIP-01): cada
+// página pede os treinos anteriores ao mais antigo da página de antes.
+
+import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +36,8 @@ class NetworkFeed {
     required this.workouts,
     required this.relays,
     required this.discarded,
+    this.oldestCreatedAt,
+    this.reachedLimit = false,
   });
 
   /// Versão mais nova de cada treino, mais recentes primeiro.
@@ -39,6 +46,13 @@ class NetworkFeed {
 
   /// Eventos recusados por `id` ou assinatura inválidos (RF-51).
   final int discarded;
+
+  /// Menor `created_at` entre os treinos recebidos: o `until` da próxima
+  /// página é um segundo antes dele. `null` se não veio nenhum.
+  final int? oldestCreatedAt;
+
+  /// Os relays devolveram o máximo pedido: pode haver treinos mais antigos.
+  final bool reachedLimit;
 }
 
 class NetworkWorkoutsService {
@@ -50,7 +64,7 @@ class NetworkWorkoutsService {
         _identity = identity,
         _relays = relays;
 
-  static const int _limit = 200;
+  static const int defaultLimit = 200;
 
   final AuthRepository _auth;
   final NostrIdentityService _identity;
@@ -62,8 +76,14 @@ class NetworkWorkoutsService {
     return _identity.ensureIdentity(me.id);
   }
 
-  /// Lança [RelaysUnavailableException] se nenhum relay respondeu.
-  Future<NetworkFeed> load(List<String> authors) async {
+  /// Treinos de [authors], do mais novo para o mais antigo. Com [until],
+  /// só os publicados até esse instante (segundos Unix). Lança
+  /// [RelaysUnavailableException] se nenhum relay respondeu.
+  Future<NetworkFeed> load(
+    List<String> authors, {
+    int? until,
+    int limit = defaultLimit,
+  }) async {
     if (authors.isEmpty) {
       return const NetworkFeed(workouts: [], relays: [], discarded: 0);
     }
@@ -71,12 +91,13 @@ class NetworkWorkoutsService {
       {
         'kinds': [NostrKinds.workoutRecord],
         'authors': authors,
-        'limit': _limit,
+        'limit': limit,
+        if (until != null) 'until': until,
       },
       {
         'kinds': [NostrKinds.exerciseTemplate],
         'authors': authors,
-        'limit': _limit,
+        'limit': defaultLimit,
       },
     ]);
     if (!result.anyRelayResponded) throw const RelaysUnavailableException();
@@ -97,6 +118,12 @@ class NetworkWorkoutsService {
     final titles = WorkoutEventAdapter.exerciseTitles(
       valid.where((e) => e.kind == NostrKinds.exerciseTemplate),
     );
+    final records = [
+      for (final event in result.events)
+        if (event.kind == NostrKinds.workoutRecord &&
+            wanted.contains(event.pubkey))
+          event,
+    ];
     return NetworkFeed(
       workouts: WorkoutEventAdapter.latestVersions(
         valid.where((e) => e.kind == NostrKinds.workoutRecord),
@@ -104,6 +131,9 @@ class NetworkWorkoutsService {
       ),
       relays: result.relays,
       discarded: discarded,
+      oldestCreatedAt:
+          records.isEmpty ? null : records.map((e) => e.createdAt).reduce(min),
+      reachedLimit: records.length >= limit,
     );
   }
 }

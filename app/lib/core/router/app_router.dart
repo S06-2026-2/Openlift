@@ -20,6 +20,7 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/widgets/import_identity_sheet.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/social/presentation/feed_screen.dart';
 import '../../features/workouts/presentation/workout_form_screen.dart';
 import '../../features/workouts/presentation/workout_history_screen.dart';
 import '../../shared/widgets/app_button.dart';
@@ -126,15 +127,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.feed,
-            builder: (context, state) => Scaffold(
-              appBar: AppBar(title: const Text('Social')),
-              body: const ComingSoonView(
-                icon: Icons.people_outline_rounded,
-                title: 'Feed social em breve',
-                description: 'Treinos de quem você segue, publicados na rede '
-                    'aberta NOSTR, vão aparecer aqui.',
-              ),
-            ),
+            builder: (context, state) => const FeedScreen(),
           ),
           GoRoute(
             path: AppRoutes.profile,

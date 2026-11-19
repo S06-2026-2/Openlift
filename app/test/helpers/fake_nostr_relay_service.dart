@@ -1,6 +1,7 @@
 // Helper de teste: NostrRelayService sem rede. Guarda o que seria enviado e
 // responde o resultado configurado para cada relay. Na leitura (FE-06), cada
-// relay devolve os eventos de [stored] que batem com o filtro.
+// relay devolve os eventos de [stored] que batem com o filtro, respeitando
+// `until` e `limit` como um relay de verdade (FE-07): os mais novos primeiro.
 
 import 'dart:async';
 
@@ -77,11 +78,21 @@ class FakeNostrRelayService implements NostrRelayService {
       final status = readStatus[url] ?? RelayReadStatus.complete;
       results.add(RelayReadResult(url: url, status: status));
       if (status == RelayReadStatus.unreachable) continue;
-      for (final event in stored[url] ?? const <NostrEvent>[]) {
-        final match = ignoringFilters.contains(url) ||
-            filters.any((f) => _matches(f, event));
-        if (match && seen.add(event.id)) {
-          events.add(event);
+      final all = stored[url] ?? const <NostrEvent>[];
+      if (ignoringFilters.contains(url)) {
+        for (final event in all) {
+          if (seen.add(event.id)) events.add(event);
+        }
+        continue;
+      }
+      for (final filter in filters) {
+        final limit = filter['limit'] as int?;
+        final matching = [
+          for (final event in all)
+            if (_matches(filter, event)) event,
+        ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        for (final event in limit == null ? matching : matching.take(limit)) {
+          if (seen.add(event.id)) events.add(event);
         }
       }
     }
@@ -91,7 +102,9 @@ class FakeNostrRelayService implements NostrRelayService {
   static bool _matches(Map<String, Object> filter, NostrEvent event) {
     final kinds = filter['kinds'] as List?;
     final authors = filter['authors'] as List?;
+    final until = filter['until'] as int?;
     return (kinds == null || kinds.contains(event.kind)) &&
-        (authors == null || authors.contains(event.pubkey));
+        (authors == null || authors.contains(event.pubkey)) &&
+        (until == null || event.createdAt <= until);
   }
 }
