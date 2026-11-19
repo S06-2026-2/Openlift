@@ -116,3 +116,20 @@ class WorkoutModel {
     );
   }
 }
+
+/// FE-09 — Uma página do histórico (`WorkoutPage` da API).
+class WorkoutPage {
+  const WorkoutPage({
+    required this.items,
+    required this.total,
+    this.offset = 0,
+  });
+
+  final List<WorkoutModel> items;
+
+  /// Quantos treinos batem com o filtro, somando todas as páginas.
+  final int total;
+  final int offset;
+
+  bool get hasMore => offset + items.length < total;
+}

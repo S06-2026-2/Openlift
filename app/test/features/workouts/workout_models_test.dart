@@ -194,11 +194,15 @@ void main() {
       expect(WorkoutValidators.weight('0'), isNull);
     });
 
-    test('RPE é opcional e vai de 0 a 10', () {
+    test('RPE é opcional e vai de 1 a 10, como a API', () {
       expect(WorkoutValidators.rpe(''), isNull);
       expect(WorkoutValidators.rpe('8,5'), isNull);
-      expect(WorkoutValidators.rpe('11'), 'De 0 a 10');
-      expect(WorkoutValidators.rpe('x'), 'De 0 a 10');
+      expect(WorkoutValidators.rpe('1'), isNull);
+      expect(WorkoutValidators.rpe('10'), isNull);
+      expect(WorkoutValidators.rpe('0'), 'De 1 a 10');
+      expect(WorkoutValidators.rpe('0,5'), 'De 1 a 10');
+      expect(WorkoutValidators.rpe('11'), 'De 1 a 10');
+      expect(WorkoutValidators.rpe('x'), 'De 1 a 10');
     });
 
     test('parseDecimal troca vírgula por ponto', () {

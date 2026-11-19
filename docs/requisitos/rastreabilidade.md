@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,8 +8,8 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 14 | 5 | 12 | 9 |
-| RNF | 14 | 2 | 7 | 5 | 0 |
+| RF | 40 | 16 | 5 | 10 | 9 |
+| RNF | 14 | 3 | 7 | 4 | 0 |
 | RN | 9 | 3 | 2 | 3 | 1 |
 
 Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md), e os da Sprint 3 em [`docs/qa/sprint-3.md`](../qa/sprint-3.md).
@@ -25,9 +25,9 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-05 | S | 💤 | — | — | — |
 | RF-10 | M | ✅ | BE-03 #25 → #44 · FE-03 #30 → #41 | `api/app/infra/db/seed.py`, `api/app/api/v1/exercises.py`, `app/lib/features/workouts/presentation/widgets/exercise_picker_sheet.dart` | `api/tests/test_exercises.py`, `app/test/features/workouts/workout_screens_test.dart` |
 | RF-11 | S | 💤 | — | — | — |
-| RF-12 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `api/app/services/workout_service.py`, `api/app/api/v1/workouts.py`, `app/lib/features/workouts/presentation/workout_form_screen.dart` | `api/tests/test_workouts.py`, `app/test/features/workouts/` |
+| RF-12 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 · FE-09 #114 | `api/app/services/workout_service.py`, `api/app/api/v1/workouts.py`, `app/lib/features/workouts/presentation/workout_form_screen.dart`; RPE de 1 a 10 no app e na API (`workout_validators.dart`) | `api/tests/test_workouts.py`, `app/test/features/workouts/` ("RPE 0 é recusado") |
 | RF-13 | S | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `set_type` em `api/app/domain/models/set.py`; seletor de tipo no formulário | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("tipo da série") |
-| RF-14 | M | 🟡 | BE-04 #26 → #45 · FE-03 #30 → #41 | API filtra por data, exercício e grupo muscular; o app filtra só por data e exercício | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("filtro por exercício") |
+| RF-14 | M | 🟡 | BE-04 #26 → #45 · FE-03 #30 → #41 · FE-09 #114 | API filtra por data, exercício e grupo muscular e pagina com `limit`/`offset`; o app filtra só por data e exercício e carrega as páginas seguintes com "Carregar mais" | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("filtro por exercício", "Carregar mais"), `workout_controller_test.dart` (paginação) |
 | RF-15 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 | `PATCH`/`DELETE /workouts/{id}`; edição e exclusão no histórico | `api/tests/test_workouts.py`, `workout_screens_test.dart` ("edição", "excluir") |
 | RF-16 | S | 💤 | — | — | — |
 | RF-17 | S | 💤 | — | — | — |
@@ -40,8 +40,8 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-25 | M | ✅ | BE-04 #26 → #45 · BE-S2-03 #90 · FE-05 #84 | Status Privado / Publicado / Falha ao publicar em cada treino do histórico, vindo do `publish_status` do backend | `publication_flow_test.dart`, `api/tests/test_workout_publication.py` |
 | RF-26 | C | 💤 | — | — | — |
 | RF-30 | M | ✅ | NOSTR-04 #107 | Contact list `kind 3` (NIP-02) lida do relay e republicada inteira a cada mudança, assinada no aparelho (`app/lib/features/social/domain/contact_list.dart`, `data/follow_service.dart`); seguir e deixar de seguir na aba "Da rede" | `app/test/features/social/contact_list_test.dart`, `follow_flow_test.dart` |
-| RF-31 | M | ⬜ S3 | — | Tela placeholder "Social" (FE-04 #50 → #51) | — |
-| RF-32 | M | ⬜ S3 | — | Tabela `likes` (BE-03 #44) | — |
+| RF-31 | M | ✅ | FE-07 #112 | Aba Social: treinos (`kind 1301`) de quem a pessoa segue, lidos dos relays com assinatura verificada, mais novos primeiro e paginados por `until` (`feed_controller.dart`, `feed_screen.dart`) | `app/test/features/social/feed_test.dart` |
+| RF-32 | M | ✅ | FE-08 #113 · BE-09 #123 · BE-10 #124 | Botão de curtir no card do feed publica um `kind 7` (NIP-25) assinado no aparelho (`like_service.dart`, `domain/like_model.dart`); contagem de `GET /social/likes` com atualização otimista (`likes_controller.dart`) | `app/test/features/social/like_test.dart`, `feed_test.dart` (grupo "curtir") |
 | RF-33 | S | 💤 | — | — | — |
 | RF-34 | S | ⬜ S4 | — | Tabela `rankings` (BE-03 #44) | — |
 | RF-35 | C | 💤 | — | — | — |
@@ -67,7 +67,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RNF-02 | 🟡 S2 | FE-06 #85 | No app, evento adulterado é descartado e contado na aba "Da rede" (`network_workouts_service_test.dart`, `network_feed_test.dart`) | O mesmo na ingestão do backend (S3) |
 | RNF-03 | ⬜ | — | — | Rate limiting nos endpoints públicos (login/cadastro) |
 | RNF-04 | 🟡 | FE-03 #30 → #41 | Série registrada só em estado local, sem rede até salvar | Teste de widget com timing |
-| RNF-05 | ⬜ S3 | — | — | Benchmark do feed |
+| RNF-05 | ✅ | FE-07 #112 | 200 eventos do feed renderizados em 284 ms no `flutter test` (teste "RNF-05" em `feed_test.dart`), com `ListView.builder` | Repetir a medição num aparelho real antes da Demo 4 |
 | RNF-06 | ⬜ S3 | — | — | Comando de replay (RF-53) + teste |
 | RNF-07 | 🟡 | CI (`backend-ci.yml`) | `pytest --cov` no CI, informativo até 29/10 (ADR-0010) | Gate de 60% a partir da Sprint 3 |
 | RNF-08 | ✅ | CI · OPS-03 #33 → #53 | `ruff`, `black`, `mypy` e `flutter analyze` no CI; pre-commit local | — |

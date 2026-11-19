@@ -155,4 +155,83 @@ void main() {
       throwsA(isA<ApiException>()),
     );
   });
+
+  group('paginação (FE-09)', () {
+    /// [count] treinos, um por dia, do mais novo (id 1) para o mais antigo.
+    FakeWorkoutRepository manyWorkouts(int count) => FakeWorkoutRepository(
+          workouts: [
+            for (var i = 1; i <= count; i++)
+              _workout(i, DateTime(2026, 10, 31).subtract(Duration(days: i))),
+          ],
+        );
+
+    test('a 1ª página traz só o tamanho da página e avisa que há mais',
+        () async {
+      final repository = manyWorkouts(WorkoutRepository.pageSize + 5);
+      final container = _container(repository);
+
+      final items = await container.read(workoutControllerProvider.future);
+      final controller = container.read(workoutControllerProvider.notifier);
+
+      expect(items, hasLength(WorkoutRepository.pageSize));
+      expect(controller.hasMore, isTrue);
+      expect(controller.total, WorkoutRepository.pageSize + 5);
+    });
+
+    test('loadMore junta a página seguinte ao fim da lista', () async {
+      final repository = manyWorkouts(WorkoutRepository.pageSize + 5);
+      final container = _container(repository);
+      await container.read(workoutControllerProvider.future);
+      final controller = container.read(workoutControllerProvider.notifier);
+
+      await controller.loadMore();
+
+      final items = container.read(workoutControllerProvider).requireValue;
+      expect(items, hasLength(WorkoutRepository.pageSize + 5));
+      expect(items.map((w) => w.id).toSet(), hasLength(items.length));
+      expect(repository.listOffsets, [0, WorkoutRepository.pageSize]);
+      expect(controller.hasMore, isFalse);
+    });
+
+    test('sem mais páginas, loadMore não chama a API', () async {
+      final repository = manyWorkouts(3);
+      final container = _container(repository);
+      await container.read(workoutControllerProvider.future);
+
+      await container.read(workoutControllerProvider.notifier).loadMore();
+
+      expect(repository.listOffsets, [0]);
+    });
+
+    test('loadMore com falha mantém a lista já carregada', () async {
+      final repository = manyWorkouts(WorkoutRepository.pageSize + 1)
+        ..loadMoreError = const ApiException('Sem conexão.');
+      final container = _container(repository);
+      await container.read(workoutControllerProvider.future);
+      final controller = container.read(workoutControllerProvider.notifier);
+
+      await expectLater(controller.loadMore(), throwsA(isA<ApiException>()));
+
+      expect(
+        container.read(workoutControllerProvider).requireValue,
+        hasLength(WorkoutRepository.pageSize),
+      );
+      expect(controller.hasMore, isTrue);
+    });
+
+    test('excluir um treino não pula nenhum na página seguinte', () async {
+      final repository = manyWorkouts(WorkoutRepository.pageSize + 2);
+      final container = _container(repository);
+      await container.read(workoutControllerProvider.future);
+      final controller = container.read(workoutControllerProvider.notifier);
+
+      await controller.remove(1);
+      repository.workouts.removeWhere((w) => w.id == 1);
+      await controller.loadMore();
+
+      final items = container.read(workoutControllerProvider).requireValue;
+      expect(items, hasLength(WorkoutRepository.pageSize + 1));
+      expect(controller.total, WorkoutRepository.pageSize + 1);
+    });
+  });
 }

@@ -54,6 +54,12 @@ class FakeWorkoutRepository implements WorkoutRepository {
   DateTime? lastTo;
   int? lastExerciseId;
 
+  /// `offset` de cada chamada de `listWorkouts` (FE-09).
+  final List<int> listOffsets = [];
+
+  /// Se definido, só as chamadas com `offset` > 0 falham.
+  ApiException? loadMoreError;
+
   int _nextId = 100;
 
   @override
@@ -64,18 +70,25 @@ class FakeWorkoutRepository implements WorkoutRepository {
   }
 
   @override
-  Future<List<WorkoutModel>> listWorkouts({
+  Future<WorkoutPage> listWorkouts({
     DateTime? from,
     DateTime? to,
     int? exerciseId,
+    int limit = WorkoutRepository.pageSize,
+    int offset = 0,
   }) async {
     listCalls++;
     lastFrom = from;
     lastTo = to;
     lastExerciseId = exerciseId;
-    final error = listError;
+    listOffsets.add(offset);
+    final error = listError ?? (offset > 0 ? loadMoreError : null);
     if (error != null) throw error;
-    return List.of(workouts);
+    return WorkoutPage(
+      items: workouts.skip(offset).take(limit).toList(),
+      total: workouts.length,
+      offset: offset,
+    );
   }
 
   @override

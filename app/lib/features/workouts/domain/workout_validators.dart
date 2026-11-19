@@ -11,7 +11,7 @@ abstract final class WorkoutLimits {
   static const int maxReps = 500;
   static const double minWeightKg = 0;
   static const double maxWeightKg = 1000;
-  static const double minRpe = 0;
+  static const double minRpe = 1;
   static const double maxRpe = 10;
 }
 
@@ -45,13 +45,16 @@ abstract final class WorkoutValidators {
     return null;
   }
 
-  /// RPE é opcional: vazio é válido.
+  /// RPE é opcional: vazio é válido. Se informado, de 1 a 10, como a API.
   static String? rpe(String? value) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return null;
     final rpe = parseDecimal(text);
-    if (rpe == null || rpe < WorkoutLimits.minRpe || rpe > WorkoutLimits.maxRpe) {
-      return 'De 0 a ${WorkoutLimits.maxRpe.toInt()}';
+    if (rpe == null ||
+        rpe < WorkoutLimits.minRpe ||
+        rpe > WorkoutLimits.maxRpe) {
+      return 'De ${WorkoutLimits.minRpe.toInt()} a '
+          '${WorkoutLimits.maxRpe.toInt()}';
     }
     return null;
   }
