@@ -113,12 +113,33 @@ jobs:
             app/coverage/lcov.info
           if-no-files-found: warn
 
+      - name: Setup Python for coverage gate
+        if: always() && steps.flutter_test.outcome == 'success'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate minimum coverage
+        id: coverage_gate
+        if: always() && steps.flutter_test.outcome == 'success'
+        continue-on-error: true
+        working-directory: .
+        run: |
+          python scripts/check_lcov_coverage.py \
+            app/coverage/lcov.info \
+            --minimum 60
+
       - name: Validate test results
         if: always()
         run: |
           if [ "${{ steps.flutter_test.outcome }}" != "success" ]; then
-            echo "Flutter tests failed. Please check the test report."
+            echo "Flutter tests failed."
             exit 1
           fi
 
-          echo "Flutter tests passed successfully."
+          if [ "${{ steps.coverage_gate.outcome }}" != "success" ]; then
+            echo "Flutter coverage gate failed."
+            exit 1
+          fi
+
+          echo "Flutter tests and coverage gate passed."
