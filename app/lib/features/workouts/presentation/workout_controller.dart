@@ -1,7 +1,9 @@
 // FE-03 — Estado do histórico de treinos (Riverpod).
 //
 // - [WorkoutFilter]/[workoutFilterProvider]: filtro por data e exercício;
-// - [WorkoutController]: lista (loading/error/data) + criar/editar/excluir;
+// - [WorkoutController]: lista (loading/error/data) + criar/editar/excluir,
+//   em páginas: a 1ª vem no build e [WorkoutController.loadMore] busca as
+//   seguintes (FE-09);
 // - [exerciseLibraryProvider]: biblioteca de exercícios (BE-03);
 // - [workoutByIdProvider]: um treino para a tela de edição.
 //
@@ -68,18 +70,59 @@ final workoutFilterProvider =
 );
 
 class WorkoutController extends AsyncNotifier<List<WorkoutModel>> {
+  /// Total no servidor para o filtro atual e quantos já foram pedidos.
+  int _total = 0;
+  int _fetched = 0;
+  bool _loadingMore = false;
+
+  /// Há treinos em páginas que ainda não foram carregadas?
+  bool get hasMore => _fetched < _total;
+
+  /// Total de treinos do filtro, contando as páginas não carregadas.
+  int get total => _total;
+
   @override
   Future<List<WorkoutModel>> build() async {
     final filter = ref.watch(workoutFilterProvider);
-    final repository = ref.watch(workoutRepositoryProvider);
-
-    final workouts = await repository.listWorkouts(
-      from: filter.from,
-      to: filter.to,
-      exerciseId: filter.exerciseId,
-    );
-    return _newestFirst(workouts.where(filter.matches).toList());
+    ref.watch(workoutRepositoryProvider);
+    final page = await _fetch(filter, offset: 0);
+    _total = page.total;
+    _fetched = page.items.length;
+    return _newestFirst(page.items.where(filter.matches).toList());
   }
+
+  /// Busca a próxima página e junta ao fim da lista. Lança ApiException se
+  /// a API falhar; a lista já carregada continua na tela.
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || !hasMore || _loadingMore) return;
+    _loadingMore = true;
+    try {
+      final filter = ref.read(workoutFilterProvider);
+      final page = await _fetch(filter, offset: _fetched);
+      _total = page.total;
+      _fetched += page.items.length;
+      // Treino que entrou nas duas páginas (lista mudou no meio) vale uma vez.
+      final known = {for (final w in current) w.id};
+      state = AsyncData([
+        ...current,
+        ..._newestFirst([
+          for (final w in page.items)
+            if (filter.matches(w) && !known.contains(w.id)) w,
+        ]),
+      ]);
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  Future<WorkoutPage> _fetch(WorkoutFilter filter, {required int offset}) =>
+      ref.read(workoutRepositoryProvider).listWorkouts(
+            from: filter.from,
+            to: filter.to,
+            exerciseId: filter.exerciseId,
+            offset: offset,
+          );
 
   /// Devolve o treino salvo (com id), para a publicação logo em seguida.
   Future<WorkoutModel> create(WorkoutModel workout) async {
@@ -102,6 +145,9 @@ class WorkoutController extends AsyncNotifier<List<WorkoutModel>> {
     await ref.read(workoutRepositoryProvider).deleteWorkout(id);
     final current = state.valueOrNull;
     if (current != null) {
+      // O próximo offset também anda uma casa para trás.
+      _total--;
+      _fetched--;
       state = AsyncData([
         for (final workout in current)
           if (workout.id != id) workout,

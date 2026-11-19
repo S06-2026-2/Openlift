@@ -2,7 +2,8 @@
 //
 // Contrato esperado do backend (BE-03/BE-04), base /api/v1:
 //   GET    /exercises                              -> [ExerciseOut]
-//   GET    /workouts?date_from&date_to&exercise_id -> [WorkoutOut] (ou {items: [...]})
+//   GET    /workouts?date_from&date_to&exercise_id&limit&offset
+//                                                   -> {items, total, limit, offset} (ou [WorkoutOut])
 //   GET    /workouts/{id}                          -> WorkoutOut
 //   POST   /workouts        {date, sets: [...]}    -> WorkoutOut
 //   PATCH  /workouts/{id}   {date, sets: [...]}    -> WorkoutOut (substitui as séries)
@@ -52,10 +53,15 @@ class WorkoutRepository {
     });
   }
 
-  Future<List<WorkoutModel>> listWorkouts({
+  /// Treinos por página (FE-09). A API aceita até 100 por página.
+  static const int pageSize = 20;
+
+  Future<WorkoutPage> listWorkouts({
     DateTime? from,
     DateTime? to,
     int? exerciseId,
+    int limit = pageSize,
+    int offset = 0,
   }) {
     return _guard(() async {
       final response = await _api.dio.get<dynamic>(
@@ -64,12 +70,22 @@ class WorkoutRepository {
           if (from != null) 'date_from': toApiDate(from),
           if (to != null) 'date_to': toApiDate(to),
           if (exerciseId != null) 'exercise_id': exerciseId,
+          'limit': limit,
+          'offset': offset,
         },
       );
-      return [
+      final items = [
         for (final item in _asList(response.data))
           WorkoutModel.fromJson(item as Map<String, dynamic>),
       ];
+      final data = response.data;
+      // Lista crua (sem envelope) não diz o total: é tudo o que existe.
+      final total = data is Map ? asInt(data['total']) : null;
+      return WorkoutPage(
+        items: items,
+        total: total ?? offset + items.length,
+        offset: offset,
+      );
     });
   }
 
