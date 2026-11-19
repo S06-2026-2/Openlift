@@ -4,6 +4,9 @@
 // Estados: carregando, erro de rede com "Tentar novamente", "você ainda não
 // segue ninguém", ninguém publicou ainda e a lista, com "Carregar mais" para
 // os treinos anteriores (paginação por `until`).
+//
+// FE-08: cada card tem o botão de curtir; as contagens vêm de
+// `GET /social/likes` sempre que o feed carrega ou ganha uma página.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,8 +19,10 @@ import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
 import '../data/network_workouts_service.dart';
 import 'feed_controller.dart';
+import 'likes_controller.dart';
 import 'network_feed_controller.dart';
 import 'widgets/feed_workout_card.dart';
+import 'widgets/like_button.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
@@ -29,6 +34,14 @@ class FeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedProvider);
+    // Mantém as curtidas vivas enquanto o feed está na tela.
+    ref.watch(likesProvider);
+    ref.listen(feedProvider, (_, next) {
+      final workouts = next.valueOrNull?.workouts ?? const [];
+      ref
+          .read(likesProvider.notifier)
+          .fetch([for (final w in workouts) w.eventId]);
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Social')),
@@ -133,7 +146,10 @@ class _FeedList extends StatelessWidget {
           if (index < workouts.length) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: FeedWorkoutCard(workout: workouts[index]),
+              child: FeedWorkoutCard(
+                workout: workouts[index],
+                footer: LikeButton(workout: workouts[index]),
+              ),
             );
           }
           return _FeedFooter(state: state);

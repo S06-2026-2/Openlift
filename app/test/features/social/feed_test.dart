@@ -1,6 +1,9 @@
 // FE-07 — Feed de quem a pessoa segue (RF-31): autores da contact list
 // (NOSTR-04), treinos lidos dos relays com assinatura verificada, um por `id`,
-// em ordem cronológica decrescente e paginados por `until`.
+// em ordem cronológica decrescente e paginados por `until`. FE-08: curtir
+// pelo card, com contagem da API e atualização otimista.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +16,9 @@ import 'package:openlift/core/storage/secure_storage_service.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
 import 'package:openlift/features/auth/data/nostr_identity_service.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
+import 'package:openlift/features/social/data/social_repository.dart';
 import 'package:openlift/features/social/domain/contact_list.dart';
+import 'package:openlift/features/social/domain/like_model.dart';
 import 'package:openlift/features/social/domain/workout_event_adapter.dart';
 import 'package:openlift/features/social/presentation/feed_controller.dart';
 import 'package:openlift/features/social/presentation/widgets/feed_workout_card.dart';
@@ -25,6 +30,7 @@ import 'package:openlift/main.dart';
 import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_nostr_relay_service.dart';
+import '../../helpers/fake_social_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
 
 const _adapter = WorkoutEventAdapter(relayHint: 'wss://relay.um.test');
@@ -87,6 +93,7 @@ class _Setup {
   final MemorySecureStorage storage = MemorySecureStorage();
   final FakeAuthRepository auth = FakeAuthRepository(session: true)
     ..userId = _userId;
+  final FakeSocialRepository social = FakeSocialRepository();
 
   /// Guarda [events] em todos os relays.
   void store(List<NostrEvent> events) {
@@ -113,6 +120,7 @@ class _Setup {
         workoutRepositoryProvider.overrideWithValue(FakeWorkoutRepository()),
         secureStorageServiceProvider.overrideWithValue(storage),
         nostrRelayServiceProvider.overrideWithValue(relays),
+        socialRepositoryProvider.overrideWithValue(social),
       ];
 
   Future<void> openFeed(WidgetTester tester) async {
@@ -370,6 +378,111 @@ void main() {
       final state = await container.read(feedProvider.future);
 
       expect(state.workouts.map((w) => w.pubkey), [_ana.publicKey]);
+    });
+  });
+
+  group('curtir (FE-08)', () {
+    Future<_Setup> feedWithOneWorkout(WidgetTester tester) async {
+      final setup = _Setup();
+      await setup.follow([_ana]);
+      setup.store([_template(_ana), _record(_ana, createdAt: 100)]);
+      await setup.openFeed(tester);
+      return setup;
+    }
+
+    List<NostrEvent> sentLikes(_Setup setup) => [
+          for (final batch in setup.relays.sent)
+            for (final event in batch)
+              if (event.kind == NostrKinds.reaction) event,
+        ];
+
+    testWidgets('a contagem vem da API ao abrir o feed', (tester) async {
+      final setup = _Setup();
+      await setup.follow([_ana]);
+      final record = _record(_ana, createdAt: 100);
+      setup.store([_template(_ana), record]);
+      setup.social.counts[record.id] = LikeCount(eventId: record.id, count: 3);
+      await setup.openFeed(tester);
+
+      expect(setup.social.calls.last, [record.id]);
+      expect(find.text('3 curtidas'), findsOneWidget);
+      expect(find.byTooltip('Curtir'), findsOneWidget);
+    });
+
+    testWidgets('curtir publica um kind 7 e a contagem sobe na hora',
+        (tester) async {
+      final setup = await feedWithOneWorkout(tester);
+      expect(find.text('0 curtidas'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Curtir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 curtida'), findsOneWidget);
+      expect(find.byTooltip('Você curtiu'), findsOneWidget);
+      final like = sentLikes(setup).single;
+      expect(like.isValid, isTrue);
+      expect(like.content, '+');
+    });
+
+    testWidgets('toque duplo publica um like só', (tester) async {
+      final setup = _Setup();
+      setup.relays.gate = Completer<void>();
+      await setup.follow([_ana]);
+      setup.store([_template(_ana), _record(_ana, createdAt: 100)]);
+      await setup.openFeed(tester);
+
+      await tester.tap(find.byTooltip('Curtir'));
+      await tester.pump();
+      // Enquanto o relay não responde, o botão já está marcado.
+      expect(find.byTooltip('Você curtiu'), findsOneWidget);
+      await tester.tap(find.byTooltip('Você curtiu'), warnIfMissed: false);
+      setup.relays.gate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(sentLikes(setup), hasLength(1));
+      expect(find.text('1 curtida'), findsOneWidget);
+    });
+
+    testWidgets('nenhum relay aceita: volta ao que era, com aviso humano',
+        (tester) async {
+      final setup = _Setup();
+      await setup.follow([_ana]);
+      setup.store([_template(_ana), _record(_ana, createdAt: 100)]);
+      await setup.openFeed(tester);
+      for (final url in setup.relays.relays) {
+        setup.relays.outcomes[url] = RelayOutcome.rejected;
+      }
+
+      await tester.tap(find.byTooltip('Curtir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 curtidas'), findsOneWidget);
+      expect(find.byTooltip('Curtir'), findsOneWidget);
+      expect(
+          find.textContaining('Não foi possível curtir agora'), findsOneWidget);
+    });
+
+    testWidgets('a API confirma o like depois do ciclo do worker',
+        (tester) async {
+      final setup = await feedWithOneWorkout(tester);
+      final record = setup.relays.stored.values.first
+          .firstWhere((e) => e.kind == NostrKinds.workoutRecord);
+
+      await tester.tap(find.byTooltip('Curtir'));
+      await tester.pumpAndSettle();
+
+      // Antes do worker: a API ainda não conta o like, e o otimista fica.
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('1 curtida'), findsOneWidget);
+
+      // Depois do ciclo: a API conta 1, curtido por mim. Não vira 2.
+      setup.social.counts[record.id] =
+          LikeCount(eventId: record.id, count: 1, likedByMe: true);
+      await tester.fling(find.byType(ListView), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('1 curtida'), findsOneWidget);
+      expect(setup.social.calls.length, greaterThanOrEqualTo(3));
     });
   });
 }
