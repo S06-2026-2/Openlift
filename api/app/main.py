@@ -6,14 +6,18 @@
 - erros sempre no formato {"detail": "...", "code": "..."} (app/core/errors.py).
 """
 
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.deps import DbSession
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.database import engine
 from app.core.errors import register_exception_handlers
+from app.services import profile_service
 
 app = FastAPI(
     title="OpenLift API",
@@ -26,6 +30,8 @@ app = FastAPI(
         {"name": "exercises", "description": "Biblioteca de exercícios por grupo muscular."},
         {"name": "workouts", "description": "Treinos e séries do usuário logado."},
         {"name": "stats", "description": "Volume semanal, grupos musculares e mapa de calor."},
+        {"name": "profiles", "description": "Perfis da rede social e busca por nome de usuário."},
+        {"name": "nostr", "description": "Diretório NIP-05 dos nomes de usuário."},
         {"name": "system", "description": "Saúde e versão da API."},
     ],
 )
@@ -53,5 +59,23 @@ def version() -> dict:
 
 
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.get(
+    "/.well-known/nostr.json",
+    tags=["nostr"],
+    summary="Nomes verificados (NIP-05)",
+    description="Liga `nome@domínio` à chave pública, no formato da NIP-05. Público e com "
+    "CORS aberto, como a NIP-05 exige. Sem `name` (ou com nome inexistente), `names` vem "
+    "vazio: o diretório não é listado inteiro.",
+)
+def nostr_json(
+    response: Response,
+    db: DbSession,
+    name: Annotated[str | None, Query(max_length=40, description="Nome de usuário")] = None,
+) -> dict:
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return {"names": profile_service.nip05_names(db, name)}
+
 
 # TODO(Sprint 4): middleware de rate limiting (slowapi)
