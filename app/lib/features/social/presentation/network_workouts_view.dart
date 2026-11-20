@@ -1,10 +1,10 @@
 // FE-06 — Aba provisória "Da rede" do histórico: treinos lidos dos relays
 // NOSTR, já com a assinatura verificada (RF-51, RNF-02).
 //
-// Mostra o `npub` deste aparelho (identificador público, para outra pessoa
-// colar) e deixa seguir alguém pelo `npub` para ver os treinos dela. Desde o
-// NOSTR-04, seguir publica a contact list (kind 3) e vale em qualquer
-// aparelho com a mesma identidade.
+// Mostra o ID deste aparelho (o `npub`, identificador público, para outra
+// pessoa colar) e deixa buscar alguém pelo ID: aparecem os treinos que a
+// pessoa publicou e o botão de seguir. Desde o NOSTR-04, seguir publica a
+// contact list (kind 3) e vale em qualquer aparelho com a mesma identidade.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +20,7 @@ import '../data/network_workouts_service.dart';
 import '../domain/published_workout.dart';
 import 'network_feed_controller.dart';
 
-/// `npub1abcdefgh…wxyz` para caber na tela.
+/// ID (`npub1abcdefgh…wxyz`) encurtado para caber na tela.
 String shortNpub(String npub) => npub.length <= 20
     ? npub
     : '${npub.substring(0, 12)}…${npub.substring(npub.length - 6)}';
@@ -45,7 +45,7 @@ class NetworkWorkoutsView extends ConsumerWidget {
           children: [
             if (own != null) _OwnIdentityCard(npub: own.npub),
             const SizedBox(height: 12),
-            const _FollowField(),
+            const _IdSearch(),
             const SizedBox(height: 20),
             ...feed.when(
               skipLoadingOnRefresh: false,
@@ -107,8 +107,8 @@ class NetworkWorkoutsView extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Text(
-            'Nenhum treino publicado ainda. Publique um treino ou siga '
-            'alguém pelo npub.',
+            'Nenhum treino publicado ainda. Publique um treino ou busque '
+            'alguém pelo ID.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -152,26 +152,26 @@ class _OwnIdentityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Seu npub', style: theme.textTheme.titleSmall),
+                  Text('Seu ID', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 2),
                   Text(shortNpub(npub), style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 2),
                   Text(
-                    'Identificador público. Compartilhe para outra pessoa '
-                    'ver seus treinos publicados.',
+                    'Seu identificador público na rede. Compartilhe para '
+                    'outra pessoa te encontrar e ver seus treinos.',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
             ),
             IconButton(
-              tooltip: 'Copiar npub',
+              tooltip: 'Copiar ID',
               icon: const Icon(Icons.copy_rounded, size: 20),
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 await Clipboard.setData(ClipboardData(text: npub));
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('npub copiado.')),
+                  const SnackBar(content: Text('ID copiado.')),
                 );
               },
             ),
@@ -182,17 +182,20 @@ class _OwnIdentityCard extends StatelessWidget {
   }
 }
 
-class _FollowField extends ConsumerStatefulWidget {
-  const _FollowField();
+/// Busca de pessoa pelo ID + quem a pessoa já segue.
+class _IdSearch extends ConsumerStatefulWidget {
+  const _IdSearch();
 
   @override
-  ConsumerState<_FollowField> createState() => _FollowFieldState();
+  ConsumerState<_IdSearch> createState() => _IdSearchState();
 }
 
-class _FollowFieldState extends ConsumerState<_FollowField> {
+class _IdSearchState extends ConsumerState<_IdSearch> {
   final _controller = TextEditingController();
   String? _error;
-  bool _busy = false;
+
+  /// Chave pública (hex) de quem foi encontrado.
+  String? _found;
 
   @override
   void dispose() {
@@ -200,17 +203,31 @@ class _FollowFieldState extends ConsumerState<_FollowField> {
     super.dispose();
   }
 
-  Future<void> _follow() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    final error =
-        await ref.read(followingProvider.notifier).follow(_controller.text);
+  Future<void> _search() async {
+    String? error;
+    String? found;
+    try {
+      found = parseIdInput(_controller.text);
+      final own = await ref.read(ownIdentityProvider.future);
+      if (found == own.publicKeyHex) {
+        found = null;
+        error = IdInputException.ownId;
+      }
+    } on IdInputException catch (e) {
+      error = e.message;
+    } on Object {
+      error = 'Não foi possível buscar agora. Tente novamente.';
+    }
     if (!mounted) return;
     setState(() {
-      _busy = false;
       _error = error;
+      _found = found;
     });
-    if (error == null) _controller.clear();
+  }
+
+  void _close() {
+    setState(() => _found = null);
+    _controller.clear();
   }
 
   Future<void> _unfollow(String pubkey) async {
@@ -224,6 +241,7 @@ class _FollowFieldState extends ConsumerState<_FollowField> {
   @override
   Widget build(BuildContext context) {
     final following = ref.watch(followingProvider).valueOrNull;
+    final found = _found;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,30 +249,26 @@ class _FollowFieldState extends ConsumerState<_FollowField> {
         TextField(
           controller: _controller,
           autocorrect: false,
-          enabled: !_busy,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _follow(),
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _search(),
           decoration: InputDecoration(
-            labelText: 'Seguir pessoa',
-            hintText: 'Cole o npub dela',
+            labelText: 'Buscar pessoa pelo ID',
+            hintText: 'Cole o ID dela (npub1...)',
             errorText: _error,
-            suffixIcon: _busy
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : IconButton(
-                    tooltip: 'Seguir',
-                    icon: const Icon(Icons.person_add_alt_rounded, size: 20),
-                    onPressed: _follow,
-                  ),
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            suffixIcon: IconButton(
+              tooltip: 'Buscar',
+              icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+              onPressed: _search,
+            ),
           ),
         ),
+        if (found != null) ...[
+          const SizedBox(height: 12),
+          _PersonResult(pubkey: found, onClose: _close),
+        ],
         if (following != null && !following.isEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             following.pubkeys.length == 1
                 ? 'Seguindo 1 pessoa'
@@ -276,6 +290,131 @@ class _FollowFieldState extends ConsumerState<_FollowField> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Resultado da busca: o ID encontrado, os treinos publicados e seguir.
+class _PersonResult extends ConsumerStatefulWidget {
+  const _PersonResult({required this.pubkey, required this.onClose});
+
+  final String pubkey;
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState<_PersonResult> createState() => _PersonResultState();
+}
+
+class _PersonResultState extends ConsumerState<_PersonResult> {
+  bool _busy = false;
+
+  Future<void> _toggleFollow({required bool following}) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(followingProvider.notifier);
+    final error = following
+        ? await notifier.unfollow(widget.pubkey)
+        : await notifier.followPubkey(widget.pubkey);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final contacts = ref.watch(followingProvider).valueOrNull;
+    final isFollowing = contacts?.contains(widget.pubkey) ?? false;
+    final workouts = ref.watch(personWorkoutsProvider(widget.pubkey));
+    final id = shortNpub(Nip19.encodeNpub(widget.pubkey));
+
+    String summary(NetworkFeed feed) {
+      if (feed.workouts.isEmpty) {
+        return 'Nenhum treino publicado por esse ID ainda.';
+      }
+      final last = formatDateBr(feed.workouts.first.date);
+      return feed.workouts.length == 1
+          ? '1 treino publicado · último em $last'
+          : '${feed.workouts.length} treinos publicados · último em $last';
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(
+                    Icons.person_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pessoa encontrada',
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      Text(id, style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Fechar busca',
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            workouts.when(
+              loading: () => const LinearProgressIndicator(minHeight: 2),
+              error: (_, __) => Text(
+                'Não deu para ler os treinos dessa pessoa agora.',
+                style: theme.textTheme.bodySmall,
+              ),
+              data: (feed) =>
+                  Text(summary(feed), style: theme.textTheme.bodySmall),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: AppButton(
+                label: isFollowing ? 'Seguindo' : 'Seguir',
+                icon: isFollowing
+                    ? Icons.check_rounded
+                    : Icons.person_add_alt_rounded,
+                variant: isFollowing
+                    ? AppButtonVariant.secondary
+                    : AppButtonVariant.primary,
+                isLoading: _busy,
+                onPressed: contacts == null
+                    ? null
+                    : () => _toggleFollow(following: isFollowing),
+              ),
+            ),
+            if (isFollowing)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Toque em "Seguindo" para deixar de seguir.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
