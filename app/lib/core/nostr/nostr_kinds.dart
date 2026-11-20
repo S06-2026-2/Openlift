@@ -12,6 +12,9 @@ abstract final class NostrKinds {
   /// NIP-25 — reação (like).
   static const int reaction = 7;
 
+  /// NIP-68 — postagem de foto da rede social (ADR-0012). Nunca `kind 1`.
+  static const int picture = 20;
+
   /// NIP-101e — registro de treino. Treino nunca é `kind 1` (ADR-0003).
   static const int workoutRecord = 1301;
 

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:openlift/core/network/api_exception.dart';
 import 'package:openlift/features/social/data/profile_repository.dart';
+import 'package:openlift/features/social/domain/media_model.dart';
 import 'package:openlift/features/social/domain/profile_model.dart';
 
 /// Perfil pronto para testes.

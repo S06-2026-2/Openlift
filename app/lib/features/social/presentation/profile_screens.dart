@@ -2,7 +2,8 @@
 // - [ProfileSetupView]: cadastro de perfil, antes de entrar na aba Social;
 // - [ProfileEditScreen]: editar o próprio perfil;
 // - [PeopleSearchScreen]: buscar pessoas pelo nome de usuário;
-// - [PersonProfileScreen]: perfil de uma pessoa, com seguir e os treinos.
+// - [PersonProfileScreen]: perfil de uma pessoa, com seguir, a grade de
+//   fotos e os treinos publicados.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +14,14 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
+import '../domain/photo_post.dart';
 import '../domain/profile_model.dart';
 import 'network_feed_controller.dart';
+import 'posts_controller.dart';
 import 'profile_controller.dart';
 import 'profile_form.dart';
 import 'widgets/feed_workout_card.dart';
+import 'widgets/photo_post_card.dart';
 import 'widgets/profile_avatar.dart';
 
 /// Primeiro acesso à aba Social: escolher o nome de usuário.
@@ -299,6 +303,13 @@ class _PersonBody extends ConsumerWidget {
     final mine = ref.watch(myProfileProvider).valueOrNull;
     final isMe = mine?.pubkey == profile.pubkey;
     final workouts = ref.watch(personWorkoutsProvider(profile.pubkey));
+    final posts = ref.watch(personPostsProvider(profile.pubkey));
+    ref.watch(postLikesProvider);
+    ref.listen(personPostsProvider(profile.pubkey), (_, next) {
+      ref
+          .read(postLikesProvider.notifier)
+          .fetch(next.valueOrNull ?? const <PhotoPost>[]);
+    });
 
     return LayoutBuilder(
       builder: (context, constraints) => ListView(
@@ -314,6 +325,30 @@ class _PersonBody extends ConsumerWidget {
                     onPressed: () => context.go(AppRoutes.profileEdit),
                   )
                 : FollowButton(pubkey: profile.pubkey),
+          ),
+          const SizedBox(height: 28),
+          SectionLabel(
+            posts.valueOrNull == null
+                ? 'Fotos'
+                : posts.valueOrNull!.length == 1
+                    ? '1 foto'
+                    : '${posts.valueOrNull!.length} fotos',
+          ),
+          const SizedBox(height: 12),
+          posts.when(
+            loading: () => const LinearProgressIndicator(minHeight: 2),
+            error: (_, __) => Text(
+              'Não deu para ler as fotos agora.',
+              style: theme.textTheme.bodySmall,
+            ),
+            data: (items) => items.isEmpty
+                ? Text(
+                    'Nenhuma foto publicada ainda.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : _PhotoGrid(posts: items, author: profile),
           ),
           const SizedBox(height: 28),
           const SectionLabel('Treinos publicados'),
@@ -388,6 +423,63 @@ class _FollowButtonState extends ConsumerState<FollowButton> {
           following ? AppButtonVariant.secondary : AppButtonVariant.primary,
       isLoading: _busy,
       onPressed: contacts == null ? null : () => _toggle(following),
+    );
+  }
+}
+
+/// Grade de fotos (3 colunas); tocar abre a postagem inteira.
+class _PhotoGrid extends StatelessWidget {
+  const _PhotoGrid({required this.posts, required this.author});
+
+  final List<PhotoPost> posts;
+  final SocialProfile author;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: posts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+      ),
+      itemBuilder: (context, index) {
+        final post = posts[index];
+        return Semantics(
+          button: true,
+          label: post.caption.isEmpty ? 'Foto' : post.caption,
+          child: InkWell(
+            key: ValueKey('photo-${post.eventId}'),
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (_) => Dialog(
+                insetPadding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: PhotoPostCard(post: post, author: author),
+                ),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: ColoredBox(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Image.network(
+                  post.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.image_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
