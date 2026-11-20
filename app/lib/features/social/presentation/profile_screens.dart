@@ -14,12 +14,15 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
+import '../../../core/nostr/nostr_kinds.dart';
+import '../domain/comment.dart';
 import '../domain/photo_post.dart';
 import '../domain/profile_model.dart';
 import 'network_feed_controller.dart';
 import 'posts_controller.dart';
 import 'profile_controller.dart';
 import 'profile_form.dart';
+import 'widgets/comments_sheet.dart';
 import 'widgets/feed_workout_card.dart';
 import 'widgets/photo_post_card.dart';
 import 'widgets/profile_avatar.dart';
@@ -459,7 +462,17 @@ class _PhotoGrid extends StatelessWidget {
               builder: (_) => Dialog(
                 insetPadding: const EdgeInsets.all(16),
                 child: SingleChildScrollView(
-                  child: PhotoPostCard(post: post, author: author),
+                  child: PhotoPostCard(
+                    post: post,
+                    author: author,
+                    footer: CommentButton(
+                      target: CommentTarget(
+                        eventId: post.eventId,
+                        pubkey: post.pubkey,
+                        kind: NostrKinds.picture,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
