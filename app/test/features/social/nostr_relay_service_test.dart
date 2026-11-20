@@ -13,9 +13,10 @@ import 'package:openlift/core/nostr/nostr_event.dart';
 import 'package:openlift/core/nostr/nostr_kinds.dart';
 import 'package:openlift/core/nostr/nostr_signer.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
+import 'package:openlift/features/social/presentation/widgets/publication_widgets.dart';
 
 /// Como o relay de teste responde a cada `EVENT`.
-enum _Behavior { accept, reject, silent, refuse, hangUp }
+enum _Behavior { accept, reject, rateLimit, duplicate, silent, refuse, hangUp }
 
 class _FakeConnection implements RelayConnection {
   _FakeConnection(this.behavior);
@@ -47,6 +48,10 @@ class _FakeConnection implements RelayConnection {
         _incoming.add(jsonEncode(['OK', id, true, '']));
       case _Behavior.reject:
         _incoming.add(jsonEncode(['OK', id, false, 'blocked: teste']));
+      case _Behavior.rateLimit:
+        _incoming.add(jsonEncode(['OK', id, false, 'rate-limited: devagar']));
+      case _Behavior.duplicate:
+        _incoming.add(jsonEncode(['OK', id, false, 'duplicate: já tenho']));
       case _Behavior.hangUp:
         _incoming.close();
       case _Behavior.silent:
@@ -174,6 +179,101 @@ void main() {
     expect(results.where((r) => r.accepted), hasLength(1));
   });
 
+  group('publicação com novas tentativas', () {
+    late List<_FakeConnection> attempts;
+    late List<Duration> waits;
+
+    /// Um relay que se comporta como [sequence], uma tentativa por item.
+    NostrRelayService flaky(List<_Behavior> sequence) {
+      attempts = [];
+      waits = [];
+      return NostrRelayService(
+        relays: const ['wss://instavel.test'],
+        timeout: const Duration(seconds: 1),
+        delay: (d) async => waits.add(d),
+        connector: (_) {
+          final behavior =
+              sequence[attempts.length.clamp(0, sequence.length - 1)];
+          final connection = _FakeConnection(behavior);
+          attempts.add(connection);
+          return connection;
+        },
+      );
+    }
+
+    test('conexão recusada (ex.: HTTP 503) e depois aceita', () async {
+      final relays = flaky([_Behavior.refuse, _Behavior.accept]);
+
+      final result = (await relays.publish([template, record])).single;
+
+      expect(result.outcome, RelayOutcome.accepted);
+      expect(attempts, hasLength(2));
+      expect(waits, [const Duration(milliseconds: 500)]);
+    });
+
+    test('rate-limited tenta de novo com espera crescente', () async {
+      final relays = flaky(
+        [_Behavior.rateLimit, _Behavior.rateLimit, _Behavior.accept],
+      );
+
+      final result = (await relays.publish([record])).single;
+
+      expect(result.accepted, isTrue);
+      expect(waits, [
+        const Duration(milliseconds: 500),
+        const Duration(seconds: 1),
+      ]);
+    });
+
+    test('desiste depois das tentativas e guarda a mensagem', () async {
+      final relays = flaky([_Behavior.rateLimit]);
+
+      final result = (await relays.publish([record])).single;
+
+      expect(result.outcome, RelayOutcome.rejected);
+      expect(result.message, 'rate-limited: devagar');
+      expect(attempts, hasLength(3));
+    });
+
+    test('recusa definitiva (blocked) não tenta de novo', () async {
+      final relays = flaky([_Behavior.reject, _Behavior.accept]);
+
+      final result = (await relays.publish([record])).single;
+
+      expect(result.outcome, RelayOutcome.rejected);
+      expect(result.message, 'blocked: teste');
+      expect(result.isTransient, isFalse);
+      expect(attempts, hasLength(1));
+    });
+
+    test('o motivo de cada relay vai para a tela', () {
+      expect(
+        relayResultReason(const RelayPublishResult(
+          url: 'wss://relay.damus.io',
+          outcome: RelayOutcome.rejected,
+          message: 'blocked: kind não aceito',
+        )),
+        'relay.damus.io recusou: blocked: kind não aceito',
+      );
+      expect(
+        relayResultReason(const RelayPublishResult(
+          url: 'wss://relay.damus.io',
+          outcome: RelayOutcome.unreachable,
+        )),
+        contains('mesmo tentando de novo'),
+      );
+    });
+
+    test('duplicate conta como publicado', () async {
+      final relays = flaky([_Behavior.duplicate]);
+
+      final result = (await relays.publish([record])).single;
+
+      expect(result.accepted, isTrue);
+      expect(attempts, hasLength(1));
+    });
+  });
+
   test('URL inválida vira "não conectou", sem lançar', () async {
     final relays = NostrRelayService(
       relays: const ['wss://a.test'],
@@ -186,11 +286,11 @@ void main() {
   });
 
   group('lista de relays (ADR-0007)', () {
-    test('padrão: os três relays do ADR-0007', () {
+    test('padrão: três relays públicos (ADR-0007), sem o nostr.band', () {
       expect(AppConstants.nostrRelays, [
         'wss://relay.damus.io',
         'wss://nos.lol',
-        'wss://relay.nostr.band',
+        'wss://relay.primal.net',
       ]);
     });
 
