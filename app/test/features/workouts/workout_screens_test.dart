@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openlift/core/network/api_exception.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
+import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/features/workouts/data/workout_repository.dart';
 import 'package:openlift/features/workouts/domain/set_model.dart';
 import 'package:openlift/features/workouts/domain/workout_model.dart';
 import 'package:openlift/main.dart';
 
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_stats_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
 
 Future<void> _pumpApp(
@@ -26,6 +28,7 @@ Future<void> _pumpApp(
       overrides: [
         authRepositoryProvider
             .overrideWithValue(FakeAuthRepository(session: true)),
+        statsRepositoryProvider.overrideWithValue(FakeStatsRepository()),
         workoutRepositoryProvider.overrideWithValue(repository),
       ],
       child: const OpenLiftApp(),

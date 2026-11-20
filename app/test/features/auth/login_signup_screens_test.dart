@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openlift/core/network/api_exception.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
+import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/main.dart';
 
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_stats_repository.dart';
 
 Future<void> _pumpApp(
   WidgetTester tester,
@@ -20,7 +22,10 @@ Future<void> _pumpApp(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [authRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        statsRepositoryProvider.overrideWithValue(FakeStatsRepository()),
+      ],
       child: const OpenLiftApp(),
     ),
   );
