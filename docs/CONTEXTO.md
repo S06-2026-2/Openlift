@@ -138,6 +138,7 @@ Estas decisões **não se reabrem sem discussão no grupo**. Cada uma vira um ar
 | **009** | **Mapa de check-in em academia está fora do escopo obrigatório**, documentado como evolução futura | Não está na fonte de verdade; é uma frente inteira nova num front-end já reconhecido como gargalo; e carrega peso de LGPD com geolocalização. Vira capítulo de "evolução futura" na defesa, que é melhor do que um mapa meio pronto |
 | **010** | **Gates de qualidade progressivos:** cobertura informativa até 29/10, bloqueante em 60% a partir da Sprint 3, 70% no congelamento | Prometer 80% e entregar 55% é pior que prometer 70% e bater |
 | **011** | **Worker de sincronização com APScheduler**, em processo próprio com a mesma imagem da API (`python -m app.worker`), intervalo por variável de ambiente. **Sem Redis nem Celery**; `/stats` consulta o Postgres direto | Volume da turma; trabalho periódico e idempotente, não fila; cada serviço a mais no compose e no Railway custa horas que o front precisa |
+| **012** | *(Proposto)* **Rede social com perfil, fotos e comentários**: `username` único no Postgres publicado como NIP-05; perfil em `kind 0`; fotos hospedadas pela API, recodificadas sem EXIF; post de foto em `kind 20` (NIP-68); comentário em `kind 1111` (NIP-22) lido dos relays | Pedido do PO para a aba Social; relay não garante nome único nem guarda imagem; EXIF traz GPS (RNF-12) |
 
 ---
 
