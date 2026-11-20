@@ -27,6 +27,7 @@ import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_shell.dart';
 import '../../shared/widgets/coming_soon_view.dart';
 import '../../shared/widgets/loading_indicator.dart';
+import '../../shared/widgets/theme_toggle_button.dart';
 import 'app_routes.dart';
 
 class _RouterRefresh extends ChangeNotifier {
@@ -146,7 +147,10 @@ class _ProfilePlaceholder extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
+      appBar: AppBar(
+        title: const Text('Perfil'),
+        actions: const [ThemeToggleButton(), SizedBox(width: 8)],
+      ),
       body: ComingSoonView(
         icon: Icons.person_outline_rounded,
         title: 'Perfil em breve',
