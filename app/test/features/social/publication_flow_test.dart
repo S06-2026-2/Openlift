@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openlift/core/storage/secure_storage_service.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
 import 'package:openlift/features/auth/domain/user_model.dart';
+import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
 import 'package:openlift/features/workouts/data/workout_repository.dart';
 import 'package:openlift/features/workouts/domain/set_model.dart';
@@ -20,6 +21,7 @@ import 'package:openlift/main.dart';
 import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_nostr_relay_service.dart';
+import '../../helpers/fake_stats_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
 
 const String _d = '7c9e6679-7425-4f1b-9a2e-6a1f0c8d5b34';
@@ -59,6 +61,7 @@ class _Harness {
       ProviderScope(
         overrides: [
           authRepositoryProvider.overrideWithValue(auth),
+          statsRepositoryProvider.overrideWithValue(FakeStatsRepository()),
           workoutRepositoryProvider.overrideWithValue(repository),
           secureStorageServiceProvider.overrideWithValue(storage),
           nostrRelayServiceProvider.overrideWithValue(relays),

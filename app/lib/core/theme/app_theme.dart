@@ -34,6 +34,15 @@ class AppTheme {
   static const Color darkText = Color(0xFFFAFAFA);
   static const Color darkMuted = Color(0xFFA1A1AA);
 
+  /// Escala do mapa de calor (RF-41), do menor volume para o maior. A
+  /// célula sem treino usa `surfaceContainerHighest` do tema.
+  static const List<Color> heatScale = [
+    Color(0xFFFFE08A),
+    Color(0xFFFFB547),
+    Color(0xFFFF7A1A),
+    Color(0xFFE5341B),
+  ];
+
   /// Raios usados em todo o app.
   static const double radiusSm = 8;
   static const double radiusMd = 12;

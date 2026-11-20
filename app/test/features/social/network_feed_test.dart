@@ -9,6 +9,7 @@ import 'package:openlift/core/nostr/nostr_event.dart';
 import 'package:openlift/core/storage/secure_storage_service.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
 import 'package:openlift/features/auth/data/nostr_identity_service.dart';
+import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
 import 'package:openlift/features/workouts/data/workout_repository.dart';
 import 'package:openlift/features/workouts/domain/set_model.dart';
@@ -18,6 +19,7 @@ import 'package:openlift/main.dart';
 import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_nostr_relay_service.dart';
+import '../../helpers/fake_stats_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
 
 /// Um "aparelho": conta, armazenamento e API próprios; relays compartilhados.
@@ -44,6 +46,7 @@ class _Device {
         key: UniqueKey(),
         overrides: [
           authRepositoryProvider.overrideWithValue(auth),
+          statsRepositoryProvider.overrideWithValue(FakeStatsRepository()),
           workoutRepositoryProvider.overrideWithValue(repository),
           secureStorageServiceProvider.overrideWithValue(storage),
           nostrRelayServiceProvider.overrideWithValue(relays),

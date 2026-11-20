@@ -15,6 +15,7 @@ import 'package:openlift/core/nostr/nostr_signer.dart';
 import 'package:openlift/core/storage/secure_storage_service.dart';
 import 'package:openlift/features/auth/data/auth_repository.dart';
 import 'package:openlift/features/auth/data/nostr_identity_service.dart';
+import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
 import 'package:openlift/features/social/data/social_repository.dart';
 import 'package:openlift/features/social/domain/contact_list.dart';
@@ -31,6 +32,7 @@ import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_nostr_relay_service.dart';
 import '../../helpers/fake_social_repository.dart';
+import '../../helpers/fake_stats_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
 
 const _adapter = WorkoutEventAdapter(relayHint: 'wss://relay.um.test');
@@ -117,6 +119,7 @@ class _Setup {
 
   List<Override> get overrides => [
         authRepositoryProvider.overrideWithValue(auth),
+        statsRepositoryProvider.overrideWithValue(FakeStatsRepository()),
         workoutRepositoryProvider.overrideWithValue(FakeWorkoutRepository()),
         secureStorageServiceProvider.overrideWithValue(storage),
         nostrRelayServiceProvider.overrideWithValue(relays),

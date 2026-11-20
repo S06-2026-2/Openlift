@@ -1,23 +1,19 @@
 // Tela inicial: saudação, atalhos para registrar treino e ver o histórico, e
-// o espaço reservado para as métricas.
-//
-// Sprint 3 — cards de resumo (volume da semana, treinos no mês, streak) +
-// gráfico de volume (fl_chart). Sprint 5 adiciona o heatmap.
+// a visão geral com resumo da semana, volume semanal, mapa de calor e
+// frequência por grupo muscular (RF-41, RF-42).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../auth/presentation/auth_controller.dart';
+import 'dashboard_controller.dart';
+import 'widgets/dashboard_overview.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
-
-  // TODO(Sprint 3): cards de resumo + gráfico de linha/barra de volume.
-  // TODO(Sprint 5): seção com VolumeHeatmapWidget.
 
   static String _greeting(DateTime now) {
     if (now.hour < 12) return 'Bom dia';
@@ -27,8 +23,6 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Início'),
@@ -43,61 +37,39 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       body: LayoutBuilder(
-        builder: (context, constraints) => ListView(
-          padding: pagePadding(constraints, top: 32),
-          children: [
-            PageHeader(
-              title: _greeting(DateTime.now()),
-              subtitle: 'Registre a sessão de hoje ou revise o que já fez.',
-            ),
-            const SizedBox(height: 28),
-            _Shortcuts(
-              children: [
-                _ShortcutCard(
-                  icon: Icons.add_rounded,
-                  title: 'Novo treino',
-                  description: 'Séries, cargas e RPE em poucos toques.',
-                  highlighted: true,
-                  onTap: () => context.go(AppRoutes.newWorkout),
-                ),
-                _ShortcutCard(
-                  icon: Icons.history_rounded,
-                  title: 'Meus treinos',
-                  description: 'Histórico com filtros por data e exercício.',
-                  onTap: () => context.go(AppRoutes.workouts),
-                ),
-              ],
-            ),
-            const SizedBox(height: 36),
-            const SectionLabel('Visão geral'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        builder: (context, constraints) => RefreshIndicator(
+          onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
+          child: ListView(
+            padding: pagePadding(constraints, top: 32),
+            children: [
+              PageHeader(
+                title: _greeting(DateTime.now()),
+                subtitle: 'Registre a sessão de hoje ou revise o que já fez.',
               ),
-              child: Row(
+              const SizedBox(height: 28),
+              _Shortcuts(
                 children: [
-                  Icon(
-                    Icons.insights_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  _ShortcutCard(
+                    icon: Icons.add_rounded,
+                    title: 'Novo treino',
+                    description: 'Séries, cargas e RPE em poucos toques.',
+                    highlighted: true,
+                    onTap: () => context.go(AppRoutes.newWorkout),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Volume semanal, frequência e mapa de calor por grupo '
-                      'muscular aparecem aqui em breve.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                  _ShortcutCard(
+                    icon: Icons.history_rounded,
+                    title: 'Meus treinos',
+                    description: 'Histórico com filtros por data e exercício.',
+                    onTap: () => context.go(AppRoutes.workouts),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 36),
+              const SectionLabel('Visão geral'),
+              const SizedBox(height: 12),
+              const DashboardOverview(),
+            ],
+          ),
         ),
       ),
     );
