@@ -5,6 +5,11 @@
 // Os relays são independentes: um fora do ar não atrasa nem derruba os
 // outros, e cada um tem o seu resultado (RF-22).
 //
+// Relays públicos falham por instantes (HTTP 503 na conexão, `rate-limited:`,
+// demora): a publicação tenta de novo com espera crescente, dentro de um
+// tempo total. Recusa definitiva (`blocked:`, `invalid:`...) não se repete, e
+// `duplicate:` conta como aceito: o relay já tem o evento.
+//
 // FE-06 — Leitura: `["REQ", <id>, <filtros>...]`, junta os `EVENT` até o
 // `EOSE` e fecha a assinatura. Conexão que falha é tentada de novo com espera
 // crescente (backoff). Eventos repetidos entre relays chegam uma vez só
@@ -51,12 +56,29 @@ enum RelayOutcome {
 }
 
 class RelayPublishResult {
-  const RelayPublishResult({required this.url, required this.outcome});
+  const RelayPublishResult({
+    required this.url,
+    required this.outcome,
+    this.message = '',
+  });
 
   final String url;
   final RelayOutcome outcome;
 
+  /// Mensagem do `OK` (NIP-01), ex.: `rate-limited: devagar`. Vazia se não
+  /// houve resposta.
+  final String message;
+
   bool get accepted => outcome == RelayOutcome.accepted;
+
+  /// Falha que pode passar sozinha: vale tentar de novo. Recusa com prefixo
+  /// definitivo (`blocked:`, `invalid:`, `pow:`, `restricted:`...) não.
+  bool get isTransient => switch (outcome) {
+        RelayOutcome.accepted => false,
+        RelayOutcome.timeout || RelayOutcome.unreachable => true,
+        RelayOutcome.rejected =>
+          message.startsWith('rate-limited:') || message.startsWith('error:'),
+      };
 
   /// `wss://relay.damus.io` → `relay.damus.io`, para a tela.
   String get host {
@@ -113,7 +135,8 @@ class NostrRelayService {
   /// Limite para conectar e, depois, para a resposta `OK`.
   final Duration timeout;
 
-  /// Tentativas de conexão na leitura (a 1ª + novas tentativas).
+  /// Tentativas por relay (a 1ª + novas tentativas), na leitura e na
+  /// publicação.
   final int connectAttempts;
 
   final RelayConnector _connector;
@@ -127,12 +150,41 @@ class NostrRelayService {
     return Future.wait([for (final url in relays) _publishTo(url, events)]);
   }
 
+  /// Publica em um relay com até [connectAttempts] tentativas nas falhas
+  /// passageiras, esperando 0,5 s, 1 s... entre elas, sem passar do dobro
+  /// de [timeout] no total.
   Future<RelayPublishResult> _publishTo(
     String url,
     List<NostrEvent> events,
   ) async {
+    final elapsed = Stopwatch()..start();
+    final budget = timeout * 2;
+    var wait = const Duration(milliseconds: 500);
+    var last = RelayPublishResult(url: url, outcome: RelayOutcome.unreachable);
+    for (var attempt = 1; attempt <= connectAttempts; attempt++) {
+      final remaining = budget - elapsed.elapsed;
+      last = await _publishOnce(
+        url,
+        events,
+        remaining < timeout ? remaining : timeout,
+      );
+      if (last.accepted || !last.isTransient) return last;
+      if (attempt == connectAttempts) break;
+      if (elapsed.elapsed + wait >= budget) break;
+      await _delay(wait);
+      wait *= 2;
+    }
+    return last;
+  }
+
+  Future<RelayPublishResult> _publishOnce(
+    String url,
+    List<NostrEvent> events,
+    Duration timeout,
+  ) async {
+    var message = '';
     RelayPublishResult result(RelayOutcome outcome) =>
-        RelayPublishResult(url: url, outcome: outcome);
+        RelayPublishResult(url: url, outcome: outcome, message: message);
 
     // `null` = a conexão acabou antes do `OK`.
     final acks = {for (final event in events) event.id: Completer<bool?>()};
@@ -148,10 +200,14 @@ class NostrRelayService {
       connection = _connector(Uri.parse(url));
       await connection.ready.timeout(timeout);
       subscription = connection.messages.listen(
-        (message) {
-          final ok = _parseOk(message);
+        (raw) {
+          final ok = _parseOk(raw);
           final ack = ok == null ? null : acks[ok.$1];
-          if (ack != null && !ack.isCompleted) ack.complete(ok!.$2);
+          if (ack == null || ack.isCompleted) return;
+          final (id, accepted, text) = ok!;
+          if (id == events.last.id) message = text;
+          // `duplicate:`: o relay já tem o evento, então está publicado.
+          ack.complete(accepted || text.startsWith('duplicate:'));
         },
         onError: (Object _) => finishAll(),
         onDone: finishAll,
@@ -285,8 +341,9 @@ class NostrRelayService {
     }
   }
 
-  /// `["OK", id, aceito, mensagem]` → `(id, aceito)`; outra coisa → `null`.
-  static (String, bool)? _parseOk(dynamic message) {
+  /// `["OK", id, aceito, mensagem]` → `(id, aceito, mensagem)`; outra
+  /// coisa → `null`.
+  static (String, bool, String)? _parseOk(dynamic message) {
     if (message is! String) return null;
     try {
       final decoded = jsonDecode(message);
@@ -295,7 +352,10 @@ class NostrRelayService {
           decoded[0] == 'OK' &&
           decoded[1] is String &&
           decoded[2] is bool) {
-        return (decoded[1] as String, decoded[2] as bool);
+        final text = decoded.length > 3 && decoded[3] is String
+            ? decoded[3] as String
+            : '';
+        return (decoded[1] as String, decoded[2] as bool, text);
       }
     } on FormatException {
       // Mensagem que não é JSON: ignora.
