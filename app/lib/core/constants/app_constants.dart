@@ -12,7 +12,8 @@ class AppConstants {
   /// indicado nas referências aos modelos de exercício.
   static const String _nostrRelays = String.fromEnvironment(
     'NOSTR_RELAYS',
-    defaultValue: 'wss://relay.damus.io,wss://nos.lol,wss://relay.nostr.band',
+    // relay.nostr.band saiu do ar; relay.primal.net entra no lugar.
+    defaultValue: 'wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net',
   );
 
   static List<String> get nostrRelays => parseRelayList(_nostrRelays);
