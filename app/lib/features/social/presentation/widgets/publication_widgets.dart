@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../workouts/domain/workout_model.dart';
+import '../../data/nostr_relay_service.dart';
 import '../publication_controller.dart';
 
 /// Confirma a publicação de um treino privado. Na 1ª vez da conta mostra o
@@ -152,10 +153,13 @@ class PublicationStatusView extends ConsumerWidget {
             spacing: 10,
             children: [
               for (final relay in relays)
-                Text(
-                  '${relay.accepted ? '✓' : '✗'} ${relay.host}',
-                  style: small?.copyWith(
-                    color: relay.accepted ? muted : theme.colorScheme.error,
+                Tooltip(
+                  message: relayResultReason(relay),
+                  child: Text(
+                    '${relay.accepted ? '✓' : '✗'} ${relay.host}',
+                    style: small?.copyWith(
+                      color: relay.accepted ? muted : theme.colorScheme.error,
+                    ),
                   ),
                 ),
             ],
@@ -182,5 +186,21 @@ class PublicationStatusView extends ConsumerWidget {
           ),
       ],
     );
+  }
+}
+
+/// Por que o relay aceitou ou não, para o tooltip de cada relay.
+String relayResultReason(RelayPublishResult relay) {
+  switch (relay.outcome) {
+    case RelayOutcome.accepted:
+      return 'Publicado em ${relay.host}';
+    case RelayOutcome.timeout:
+      return '${relay.host} não respondeu a tempo, mesmo tentando de novo.';
+    case RelayOutcome.unreachable:
+      return 'Não deu para conectar em ${relay.host}, mesmo tentando de novo.';
+    case RelayOutcome.rejected:
+      return relay.message.isEmpty
+          ? '${relay.host} recusou o evento.'
+          : '${relay.host} recusou: ${relay.message}';
   }
 }
