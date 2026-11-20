@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, exercises, me, profiles, social, stats, workouts
+from app.api.v1 import auth, exercises, me, media, profiles, social, stats, workouts
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -13,3 +13,4 @@ api_router.include_router(workouts.router, prefix="/workouts", tags=["workouts"]
 api_router.include_router(stats.router, prefix="/stats", tags=["stats"])
 api_router.include_router(social.router, prefix="/social", tags=["social"])
 api_router.include_router(profiles.router, prefix="/profiles", tags=["profiles"])
+api_router.include_router(media.router, prefix="/media", tags=["media"])

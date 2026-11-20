@@ -24,6 +24,7 @@ api/.mypy_cache/
 api/.ruff_cache/
 api/htmlcov/
 api/.coverage
+api/media/
 
 # ---- Env & secrets ----
 .env

@@ -37,6 +37,8 @@ class Settings(BaseSettings):
 
     # ADR-0012 — URL pública da API: domínio do NIP-05 e base das URLs de foto
     public_base_url: str = "http://localhost:8000"
+    # ADR-0012 — onde as fotos ficam em disco (no staging, um volume persistente)
+    media_dir: str = "media"
 
     @property
     def nostr_relay_urls(self) -> list[str]:
