@@ -15,6 +15,9 @@ abstract final class NostrKinds {
   /// NIP-68 — postagem de foto da rede social (ADR-0012). Nunca `kind 1`.
   static const int picture = 20;
 
+  /// NIP-22 — comentário em foto ou treino (ADR-0012).
+  static const int comment = 1111;
+
   /// NIP-101e — registro de treino. Treino nunca é `kind 1` (ADR-0003).
   static const int workoutRecord = 1301;
 

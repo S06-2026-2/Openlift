@@ -12,6 +12,7 @@
 // perfil, mostra o cadastro. Os cards mostram foto e @nome de quem publicou.
 // O feed junta, por data, os treinos e as postagens de foto (`kind 20`) da
 // própria conta e de quem ela segue; o botão "Nova postagem" publica uma.
+// Fotos e treinos têm comentários (kind 1111, NIP-22), lidos dos relays.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,15 +24,19 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
 import '../data/network_workouts_service.dart';
+import '../../../core/nostr/nostr_kinds.dart';
+import '../domain/comment.dart';
 import '../domain/photo_post.dart';
 import '../domain/profile_model.dart';
 import '../domain/published_workout.dart';
+import 'comments_controller.dart';
 import 'feed_controller.dart';
 import 'likes_controller.dart';
 import 'network_feed_controller.dart';
 import 'posts_controller.dart';
 import 'profile_controller.dart';
 import 'profile_screens.dart';
+import 'widgets/comments_sheet.dart';
 import 'widgets/feed_workout_card.dart';
 import 'widgets/like_button.dart';
 import 'widgets/photo_post_card.dart';
@@ -146,11 +151,15 @@ class _FeedBody extends ConsumerWidget {
     // Mantém curtidas e perfis vivos enquanto o feed está na tela.
     ref.watch(likesProvider);
     ref.watch(postLikesProvider);
+    ref.watch(commentsProvider);
     ref.watch(authorProfilesProvider);
     final posts = ref.watch(postsFeedProvider).valueOrNull ?? const [];
     ref.listen(postsFeedProvider, (_, next) {
       final loaded = next.valueOrNull ?? const <PhotoPost>[];
       ref.read(postLikesProvider.notifier).fetch(loaded);
+      ref
+          .read(commentsProvider.notifier)
+          .fetch([for (final p in loaded) p.eventId]);
       ref
           .read(authorProfilesProvider.notifier)
           .load([for (final p in loaded) p.pubkey]);
@@ -163,6 +172,9 @@ class _FeedBody extends ConsumerWidget {
       ref
           .read(authorProfilesProvider.notifier)
           .load([for (final w in workouts) w.pubkey]);
+      ref
+          .read(commentsProvider.notifier)
+          .fetch([for (final w in workouts) w.eventId]);
     });
 
     return feed.when(
@@ -291,11 +303,30 @@ class _FeedList extends ConsumerWidget {
                   ? FeedWorkoutCard(
                       workout: workout,
                       author: authors[workout.pubkey],
-                      footer: LikeButton(workout: workout),
+                      footer: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          LikeButton(workout: workout),
+                          CommentButton(
+                            target: CommentTarget(
+                              eventId: workout.eventId,
+                              pubkey: workout.pubkey,
+                              kind: NostrKinds.workoutRecord,
+                            ),
+                          ),
+                        ],
+                      ),
                     )
                   : PhotoPostCard(
                       post: entry.post!,
                       author: authors[entry.pubkey],
+                      footer: CommentButton(
+                        target: CommentTarget(
+                          eventId: entry.post!.eventId,
+                          pubkey: entry.pubkey,
+                          kind: NostrKinds.picture,
+                        ),
+                      ),
                     ),
             );
           }
