@@ -25,6 +25,7 @@ app = FastAPI(
         {"name": "me", "description": "Dados do usuário logado, como a identidade NOSTR."},
         {"name": "exercises", "description": "Biblioteca de exercícios por grupo muscular."},
         {"name": "workouts", "description": "Treinos e séries do usuário logado."},
+        {"name": "stats", "description": "Volume semanal, grupos musculares e mapa de calor."},
         {"name": "system", "description": "Saúde e versão da API."},
     ],
 )
