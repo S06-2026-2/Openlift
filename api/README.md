@@ -66,6 +66,7 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `NOSTR_SYNC_INTERVAL_SECONDS` | Intervalo entre ciclos do worker (`python -m app.worker`), mínimo 10, padrão 300 |
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 | `PUBLIC_BASE_URL` | URL pública da API (padrão `http://localhost:8000`): domínio do NIP-05 (`usuario@host`) e base das URLs de foto (ADR-0012) |
+| `MEDIA_DIR` | Pasta das fotos enviadas (padrão `media`, ignorada pelo git). **No staging, monte um volume persistente aqui**, senão as fotos somem a cada deploy (ADR-0012) |
 
 ## Rotas (`/api/v1`)
 
@@ -94,6 +95,8 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | GET | `/profiles` | `?pubkeys=a&pubkeys=b` (até 100): perfis dessas chaves, para nome e foto no feed |
 | GET | `/profiles/{username}` | Perfil público pelo nome (com ou sem `@`); inexistente → 404 |
 | GET | `/.well-known/nostr.json` | NIP-05 (fora de `/api/v1`, público, CORS `*`): `?name=ana` → `{"names": {"ana": "<pubkey hex>"}}` |
+| POST | `/media` | Envia foto (multipart, campo `file`): JPEG/PNG/WebP até 5 MB, recodificada como WebP **sem EXIF/GPS**, lado maior até 1600 px. 201 com `{url, mime_type, width, height, size_bytes, sha256}` para a tag `imeta`. > 5 MB → 413; outro formato → 415 |
+| GET | `/media/{arquivo}` | Foto pública (fora de `/api/v1`), com cache longo |
 | GET | `/social/likes` | Curtidas por treino publicado (`?event_ids=a&event_ids=b`, até 100): `[{event_id, count, liked_by_me}]`. Vem do cache `likes` do worker (pode atrasar um ciclo); id fora do formato → 422 `invalid_event_id`; mais de 100 → 422 `too_many_event_ids` |
 
 Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.
