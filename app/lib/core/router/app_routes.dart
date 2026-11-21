@@ -11,5 +11,9 @@ abstract final class AppRoutes {
   static String editWorkout(int id) => '/workouts/$id/edit';
   static const String feed = '/social/feed';
   static const String compose = '/social/compose';
+  static const String peopleSearch = '/social/search';
+  static const String profileEdit = '/social/profile/edit';
+  static String person(String username) =>
+      '/social/u/${Uri.encodeComponent(username)}';
   static const String profile = '/profile';
 }
