@@ -7,6 +7,9 @@ server {
     index index.html;
 
     location /api/ {
+        # Fotos da rede social chegam até 5 MB (ADR-0012); o padrão do nginx é 1 MB.
+        client_max_body_size 6m;
+
         proxy_pass ${BACKEND_URL};
 
         proxy_ssl_server_name on;

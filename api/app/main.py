@@ -10,14 +10,16 @@ from typing import Annotated
 
 from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 
 from app.api.deps import DbSession
+from app.api.v1.media import MediaDir
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.database import engine
-from app.core.errors import register_exception_handlers
-from app.services import profile_service
+from app.core.errors import ApiError, register_exception_handlers
+from app.services import media_service, profile_service
 
 app = FastAPI(
     title="OpenLift API",
@@ -32,6 +34,7 @@ app = FastAPI(
         {"name": "stats", "description": "Volume semanal, grupos musculares e mapa de calor."},
         {"name": "profiles", "description": "Perfis da rede social e busca por nome de usuário."},
         {"name": "nostr", "description": "Diretório NIP-05 dos nomes de usuário."},
+        {"name": "media", "description": "Fotos da rede social (envio e leitura pública)."},
         {"name": "system", "description": "Saúde e versão da API."},
     ],
 )
@@ -79,3 +82,26 @@ def nostr_json(
 
 
 # TODO(Sprint 4): middleware de rate limiting (slowapi)
+
+
+@app.get(
+    "/media/{filename}",
+    tags=["media"],
+    summary="Ler foto",
+    description="Foto enviada por `POST /api/v1/media`. Pública, como toda foto publicada "
+    "na rede aberta (ADR-0012), e com cache longo: o nome do arquivo nunca é reutilizado.",
+    response_class=FileResponse,
+    responses={404: {"description": "Foto não encontrada"}},
+)
+def read_media(filename: str, media_dir: MediaDir) -> FileResponse:
+    path = media_service.stored_file(filename, media_dir)
+    if path is None:
+        raise ApiError(404, "Foto não encontrada.", "media_not_found")
+    return FileResponse(
+        path,
+        media_type=media_service.OUTPUT_MIME,
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
