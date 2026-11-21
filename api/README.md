@@ -65,6 +65,7 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `NOSTR_RELAYS` | Relays lidos pelo backend, separados por vírgula (ADR-0007). Sem valor, o backend não lê relay nenhum |
 | `NOSTR_SYNC_INTERVAL_SECONDS` | Intervalo entre ciclos do worker (`python -m app.worker`), mínimo 10, padrão 300 |
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
+| `PUBLIC_BASE_URL` | URL pública da API (padrão `http://localhost:8000`): domínio do NIP-05 (`usuario@host`) e base das URLs de foto (ADR-0012) |
 
 ## Rotas (`/api/v1`)
 
@@ -77,6 +78,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | POST | `/auth/refresh` | Troca o refresh token por um novo par |
 | GET | `/me` | Usuário logado (`id`, `email`, `npub` ou `null`, `created_at`) |
 | POST | `/me/nostr-identity` | Registra o `npub` gerado no app (só chave pública; idempotente; `npub` de outra conta → 409) |
+| GET / PUT | `/me/profile` | Perfil da rede social (ADR-0012): sem perfil → 404 `profile_not_found`; `PUT` cria ou edita (`username` único, 3–20 de `a-z0-9_.`, guardado em minúsculas; `display_name`, `bio`, `avatar_url`). Nome em uso → 409 `username_taken`; sem `npub` registrado → 409 `nostr_identity_required` |
 | GET | `/exercises` | Biblioteca com grupo muscular e equipamento do NIP-101e (`?muscle_group_id=`) |
 | POST / GET | `/workouts` | Cria treino / histórico paginado (`date_from`, `date_to`, `exercise_id`, `muscle_group_id`, `limit`, `offset`) |
 | GET / PATCH / DELETE | `/workouts/{id}` | Detalha, edita (`sets` enviado substitui todas as séries) e exclui |
@@ -87,6 +89,11 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | GET | `/stats/volume` | Volume semanal (RN-03, sem aquecimento) e treinos por semana ISO (`weeks` 1–52, padrão 12; `date_to`). Semanas sem treino vêm zeradas |
 | GET | `/stats/muscle-groups` | Volume, séries e dias treinados por grupo muscular (`date_from`, `date_to`; padrão últimos 28 dias). Todos os grupos, do mais treinado ao menos |
 | GET | `/stats/heatmap` | Matriz data × grupo × volume (`date_from`, `date_to`; padrão 8 semanas; até 366 dias) com a lista de grupos. Período invertido → 422 `invalid_date_range`; longo demais → 422 `date_range_too_long` |
+| GET | `/profiles/availability` | `?username=`: `{username, available}` (nome do próprio usuário conta como livre; fora do formato → 422 `invalid_username`) |
+| GET | `/profiles/search` | `?q=`: perfis cujo `username` começa com `q` ou cujo nome de exibição contém `q`, até 20 |
+| GET | `/profiles` | `?pubkeys=a&pubkeys=b` (até 100): perfis dessas chaves, para nome e foto no feed |
+| GET | `/profiles/{username}` | Perfil público pelo nome (com ou sem `@`); inexistente → 404 |
+| GET | `/.well-known/nostr.json` | NIP-05 (fora de `/api/v1`, público, CORS `*`): `?name=ana` → `{"names": {"ana": "<pubkey hex>"}}` |
 | GET | `/social/likes` | Curtidas por treino publicado (`?event_ids=a&event_ids=b`, até 100): `[{event_id, count, liked_by_me}]`. Vem do cache `likes` do worker (pode atrasar um ciclo); id fora do formato → 422 `invalid_event_id`; mais de 100 → 422 `too_many_event_ids` |
 
 Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.

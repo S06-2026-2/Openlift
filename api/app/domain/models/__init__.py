@@ -7,6 +7,7 @@ from app.domain.models.exercise import Exercise  # noqa: F401
 from app.domain.models.like import Like  # noqa: F401
 from app.domain.models.muscle_group import MuscleGroup  # noqa: F401
 from app.domain.models.nostr_identity import NostrIdentity  # noqa: F401
+from app.domain.models.profile import Profile  # noqa: F401
 from app.domain.models.ranking import RankingEntry  # noqa: F401
 from app.domain.models.set import WorkoutSet  # noqa: F401
 from app.domain.models.shared_event import SharedEvent  # noqa: F401

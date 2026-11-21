@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # BE-09 — intervalo do worker de sincronização (ADR-0011)
     nostr_sync_interval_seconds: int = Field(default=300, ge=10)
 
+    # ADR-0012 — URL pública da API: domínio do NIP-05 e base das URLs de foto
+    public_base_url: str = "http://localhost:8000"
+
     @property
     def nostr_relay_urls(self) -> list[str]:
         """`NOSTR_RELAYS` (separados por vírgula) → lista sem vazios nem repetidos."""
