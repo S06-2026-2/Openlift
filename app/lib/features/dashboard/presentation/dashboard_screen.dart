@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../shared/widgets/page_layout.dart';
+import '../../../shared/widgets/theme_toggle_button.dart';
 import '../../auth/presentation/auth_controller.dart';
 import 'dashboard_controller.dart';
 import 'widgets/dashboard_overview.dart';
@@ -27,6 +28,7 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Início'),
         actions: [
+          const ThemeToggleButton(),
           IconButton(
             tooltip: 'Sair',
             icon: const Icon(Icons.logout_rounded, size: 20),
