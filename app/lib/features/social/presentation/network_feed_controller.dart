@@ -3,7 +3,8 @@
 //
 // - [followingProvider]: quem a pessoa segue, lido do kind 3 nos relays
 //   (NOSTR-04). Seguir e deixar de seguir publicam a lista inteira;
-// - [ownIdentityProvider]: a identidade pública deste aparelho;
+// - [ownIdentityProvider]: a identidade pública deste aparelho (o "ID");
+// - [personWorkoutsProvider]: treinos de quem foi buscado pelo ID;
 // - [networkFeedProvider]: treinos da própria identidade primeiro, depois os
 //   de quem ela segue.
 
@@ -15,25 +16,50 @@ import '../data/follow_service.dart';
 import '../data/network_workouts_service.dart';
 import '../domain/contact_list.dart';
 
+/// ID digitado que não dá para usar. [message] vai direto para a tela.
+class IdInputException implements Exception {
+  const IdInputException(this.message);
+
+  final String message;
+
+  static const String invalid =
+      'Esse ID não é válido. Confira se colou ele inteiro.';
+  static const String ownId = 'Esse é o seu ID. Não dá para seguir a si mesmo.';
+}
+
+/// O "ID" que o app mostra é o `npub` (NIP-19): identificador público da
+/// pessoa na rede. Devolve a chave pública em hex.
+String parseIdInput(String raw) {
+  try {
+    return Nip19.decodeNpub(raw.trim().toLowerCase());
+  } on Object {
+    throw const IdInputException(IdInputException.invalid);
+  }
+}
+
 class FollowingController extends AutoDisposeAsyncNotifier<ContactList> {
   bool _busy = false;
 
   @override
   Future<ContactList> build() => ref.watch(followServiceProvider).load();
 
-  /// Segue o dono de [raw] (`npub`). Devolve a mensagem de erro para a tela,
-  /// ou `null`. Se a publicação falhar, a lista continua como estava.
+  /// Segue o dono de [raw] (o ID, um `npub`). Devolve a mensagem de erro
+  /// para a tela, ou `null`. Se a publicação falhar, a lista continua como
+  /// estava.
   Future<String?> follow(String raw) async {
     final String pubkey;
     try {
-      pubkey = Nip19.decodeNpub(raw.trim().toLowerCase());
-    } on Object {
-      return 'Isso não é um npub válido.';
+      pubkey = parseIdInput(raw);
+    } on IdInputException catch (e) {
+      return e.message;
     }
     final own = await ref.read(ownIdentityProvider.future);
-    if (pubkey == own.publicKeyHex) {
-      return 'Esse é o seu npub. Não dá para seguir a si mesmo.';
-    }
+    if (pubkey == own.publicKeyHex) return IdInputException.ownId;
+    return followPubkey(pubkey);
+  }
+
+  /// Segue [pubkey] (hex, já validado). Devolve a mensagem de erro, ou `null`.
+  Future<String?> followPubkey(String pubkey) async {
     final current = state.valueOrNull;
     if (current == null) return _notLoaded;
     if (current.contains(pubkey)) return 'Você já segue essa pessoa.';
@@ -77,6 +103,13 @@ final followingProvider =
 
 final ownIdentityProvider = FutureProvider.autoDispose<NostrIdentity>(
   (ref) => ref.watch(networkWorkoutsServiceProvider).ownIdentity(),
+);
+
+/// Treinos publicados por uma pessoa buscada pelo ID (antes de seguir).
+final personWorkoutsProvider =
+    FutureProvider.autoDispose.family<NetworkFeed, String>(
+  (ref, pubkey) =>
+      ref.watch(networkWorkoutsServiceProvider).load([pubkey], limit: 50),
 );
 
 final networkFeedProvider =

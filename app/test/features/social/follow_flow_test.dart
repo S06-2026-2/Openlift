@@ -61,9 +61,19 @@ class _Device {
     await tester.pumpAndSettle();
   }
 
+  /// Busca pelo ID e, se a pessoa aparecer e ainda não for seguida, segue.
   Future<void> follow(WidgetTester tester, String npub) async {
+    await search(tester, npub);
+    final button = find.text('Seguir');
+    if (button.evaluate().isNotEmpty) {
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+  }
+
+  Future<void> search(WidgetTester tester, String npub) async {
     await tester.enterText(find.byType(TextField), npub);
-    await tester.tap(find.byTooltip('Seguir'));
+    await tester.tap(find.byTooltip('Buscar'));
     await tester.pumpAndSettle();
   }
 }
@@ -105,8 +115,9 @@ void main() {
 
     expect(_lastPublishedList(relays), [bia.publicKeyHex]);
     expect(find.text('Seguindo 1 pessoa'), findsOneWidget);
-    expect(find.text(_short(bia.npub)), findsOneWidget);
-    expect(find.text(_short(ana.npub)), findsNothing);
+    // A busca de Bia segue aberta; os chips mostram só quem é seguido.
+    expect(find.widgetWithText(InputChip, _short(bia.npub)), findsOneWidget);
+    expect(find.widgetWithText(InputChip, _short(ana.npub)), findsNothing);
   });
 
   testWidgets('a lista sobrevive a sair e entrar de novo', (tester) async {
@@ -147,7 +158,7 @@ void main() {
     expect(_lastPublishedList(relays), [ana.publicKeyHex, bia.publicKeyHex]);
   });
 
-  testWidgets('npub inválido mostra erro humano e não publica nada',
+  testWidgets('ID inválido mostra erro humano e não publica nada',
       (tester) async {
     final relays = FakeNostrRelayService();
     final device = _Device(relays, userId: 1);
@@ -155,7 +166,10 @@ void main() {
 
     await device.follow(tester, 'npub1naoexiste');
 
-    expect(find.text('Isso não é um npub válido.'), findsOneWidget);
+    expect(
+      find.text('Esse ID não é válido. Confira se colou ele inteiro.'),
+      findsOneWidget,
+    );
     expect(find.byType(InputChip), findsNothing);
     expect(relays.sent, isEmpty);
   });
@@ -168,13 +182,13 @@ void main() {
     await device.follow(tester, (await device.identity()).npub);
 
     expect(
-      find.text('Esse é o seu npub. Não dá para seguir a si mesmo.'),
+      find.text('Esse é o seu ID. Não dá para seguir a si mesmo.'),
       findsOneWidget,
     );
     expect(relays.sent, isEmpty);
   });
 
-  testWidgets('seguir quem já é seguido avisa e não publica de novo',
+  testWidgets('buscar quem já é seguido mostra "Seguindo" e não publica',
       (tester) async {
     final relays = FakeNostrRelayService();
     final ana = await _person(10);
@@ -182,10 +196,26 @@ void main() {
     await device.open(tester);
     await device.follow(tester, ana.npub);
 
+    await device.search(tester, ana.npub);
+
+    expect(find.text('Seguindo'), findsOneWidget);
+    expect(find.text('Seguir'), findsNothing);
+    expect(relays.sent, hasLength(1));
+  });
+
+  testWidgets('"Seguindo" no resultado da busca deixa de seguir',
+      (tester) async {
+    final relays = FakeNostrRelayService();
+    final ana = await _person(10);
+    final device = _Device(relays, userId: 1);
+    await device.open(tester);
     await device.follow(tester, ana.npub);
 
-    expect(find.text('Você já segue essa pessoa.'), findsOneWidget);
-    expect(relays.sent, hasLength(1));
+    await tester.tap(find.text('Seguindo'));
+    await tester.pumpAndSettle();
+
+    expect(_lastPublishedList(relays), isEmpty);
+    expect(find.text('Seguir'), findsOneWidget);
   });
 
   testWidgets('nenhum relay aceita: mensagem humana e a lista não muda',
