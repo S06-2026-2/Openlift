@@ -17,6 +17,7 @@ import 'package:openlift/features/auth/data/auth_repository.dart';
 import 'package:openlift/features/auth/data/nostr_identity_service.dart';
 import 'package:openlift/features/dashboard/data/stats_repository.dart';
 import 'package:openlift/features/social/data/nostr_relay_service.dart';
+import 'package:openlift/features/social/data/profile_repository.dart';
 import 'package:openlift/features/social/data/social_repository.dart';
 import 'package:openlift/features/social/domain/contact_list.dart';
 import 'package:openlift/features/social/domain/like_model.dart';
@@ -31,6 +32,7 @@ import 'package:openlift/main.dart';
 import '../../helpers/fake_auth_repository.dart';
 import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_nostr_relay_service.dart';
+import '../../helpers/fake_profile_repository.dart';
 import '../../helpers/fake_social_repository.dart';
 import '../../helpers/fake_stats_repository.dart';
 import '../../helpers/fake_workout_repository.dart';
@@ -96,6 +98,8 @@ class _Setup {
   final FakeAuthRepository auth = FakeAuthRepository(session: true)
     ..userId = _userId;
   final FakeSocialRepository social = FakeSocialRepository();
+  final FakeProfileRepository profiles =
+      FakeProfileRepository(mine: fakeProfile('eu.mesmo'));
 
   /// Guarda [events] em todos os relays.
   void store(List<NostrEvent> events) {
@@ -124,6 +128,7 @@ class _Setup {
         secureStorageServiceProvider.overrideWithValue(storage),
         nostrRelayServiceProvider.overrideWithValue(relays),
         socialRepositoryProvider.overrideWithValue(social),
+        profileRepositoryProvider.overrideWithValue(profiles),
       ];
 
   Future<void> openFeed(WidgetTester tester) async {
@@ -153,7 +158,7 @@ void main() {
       await setup.openFeed(tester);
 
       expect(find.text('Você ainda não segue ninguém'), findsOneWidget);
-      expect(find.text('Seguir alguém'), findsOneWidget);
+      expect(find.text('Buscar pessoas'), findsOneWidget);
       // Sem contact list, nenhum treino é pedido aos relays.
       expect(
         setup.relays.queries.expand((q) => q).any(

@@ -1,7 +1,8 @@
 // Navegação declarativa (go_router) com as rotas do app e proteção por sessão.
 //
 // Rotas: /login, /signup, /dashboard, /workouts, /workouts/new, /social/feed,
-// /social/compose, /profile.
+// /social/compose, /social/search, /social/profile/edit, /social/u/:username,
+// /profile.
 //
 // As 4 áreas principais (Início, Treinos, Social, Perfil) ficam dentro da
 // AppShell (navegação inferior/lateral). Formulários e "Compartilhar" abrem em
@@ -21,6 +22,7 @@ import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/widgets/import_identity_sheet.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/social/presentation/feed_screen.dart';
+import '../../features/social/presentation/profile_screens.dart';
 import '../../features/workouts/presentation/workout_form_screen.dart';
 import '../../features/workouts/presentation/workout_history_screen.dart';
 import '../../shared/widgets/app_button.dart';
@@ -110,6 +112,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             description: 'Publique um treino ou artigo na rede aberta NOSTR. '
                 'Disponível nas próximas versões.',
           ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.peopleSearch,
+        builder: (context, state) => const PeopleSearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/social/u/:username',
+        builder: (context, state) => PersonProfileScreen(
+          username: state.pathParameters['username'] ?? '',
         ),
       ),
       ShellRoute(

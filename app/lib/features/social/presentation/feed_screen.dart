@@ -7,6 +7,9 @@
 //
 // FE-08: cada card tem o botão de curtir; as contagens vêm de
 // `GET /social/likes` sempre que o feed carrega ou ganha uma página.
+//
+// ADR-0012: a aba só abre para quem tem perfil (nome de usuário único); sem
+// perfil, mostra o cadastro. Os cards mostram foto e @nome de quem publicou.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,14 +21,106 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
 import '../data/network_workouts_service.dart';
+import '../domain/profile_model.dart';
 import 'feed_controller.dart';
 import 'likes_controller.dart';
 import 'network_feed_controller.dart';
+import 'profile_controller.dart';
+import 'profile_screens.dart';
 import 'widgets/feed_workout_card.dart';
 import 'widgets/like_button.dart';
+import 'widgets/profile_avatar.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(myProfileProvider);
+    final mine = profile.valueOrNull;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Social'),
+        actions: [
+          if (mine != null)
+            IconButton(
+              tooltip: 'Buscar pessoas',
+              icon: const Icon(Icons.person_search_rounded, size: 22),
+              onPressed: () => context.go(AppRoutes.peopleSearch),
+            ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: profile.when(
+        skipLoadingOnRefresh: false,
+        loading: () => const LoadingIndicator(message: 'Carregando...'),
+        error: (error, _) => ErrorStateView(
+          message: profileErrorMessage(error),
+          onRetry: () => ref.invalidate(myProfileProvider),
+        ),
+        data: (mine) => mine == null
+            ? const ProfileSetupView()
+            : Column(
+                children: [
+                  _MyProfileBar(profile: mine),
+                  const Expanded(child: _FeedBody()),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// Faixa com o próprio perfil no topo do feed.
+class _MyProfileBar extends StatelessWidget {
+  const _MyProfileBar({required this.profile});
+
+  final SocialProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) => Padding(
+        padding: pagePadding(constraints, top: 16, bottom: 4),
+        child: Row(
+          children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: () => context.go(AppRoutes.person(profile.username)),
+              child: ProfileAvatar(
+                name: profile.title,
+                url: profile.avatarUrl,
+                radius: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(profile.title, style: theme.textTheme.titleMedium),
+                  if (profile.displayName != null)
+                    Text(profile.handle, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => context.go(AppRoutes.profileEdit),
+              icon: const Icon(Icons.edit_rounded, size: 16),
+              label: const Text('Editar perfil'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedBody extends ConsumerWidget {
+  const _FeedBody();
 
   void _retry(WidgetRef ref) => ref
     ..invalidate(followingProvider)
@@ -34,59 +129,60 @@ class FeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedProvider);
-    // Mantém as curtidas vivas enquanto o feed está na tela.
+    // Mantém curtidas e perfis vivos enquanto o feed está na tela.
     ref.watch(likesProvider);
+    ref.watch(authorProfilesProvider);
     ref.listen(feedProvider, (_, next) {
       final workouts = next.valueOrNull?.workouts ?? const [];
       ref
           .read(likesProvider.notifier)
           .fetch([for (final w in workouts) w.eventId]);
+      ref
+          .read(authorProfilesProvider.notifier)
+          .load([for (final w in workouts) w.pubkey]);
     });
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Social')),
-      body: feed.when(
-        skipLoadingOnRefresh: false,
-        loading: () => const LoadingIndicator(message: 'Carregando o feed...'),
-        error: (error, _) => ErrorStateView(
-          message: error is RelaysUnavailableException
-              ? error.message
-              : 'Não foi possível carregar o feed.',
-          onRetry: () => _retry(ref),
-        ),
-        data: (state) {
-          if (!state.followsAnyone) {
-            return EmptyStateView(
-              icon: Icons.people_outline_rounded,
-              title: 'Você ainda não segue ninguém',
-              description: 'Busque alguém pelo ID em Treinos → Da rede, e os '
-                  'treinos publicados por essa pessoa aparecem aqui.',
-              actionLabel: 'Seguir alguém',
-              onAction: () => context.go(AppRoutes.workouts),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () => ref.refresh(feedProvider.future).then(
-                  (_) {},
-                  onError: (Object _) {},
-                ),
-            child: state.workouts.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      const SizedBox(height: 120),
-                      const _NobodyPublished(),
-                      // Tudo descartado não é "ninguém publicou": avisa.
-                      if (state.discarded > 0) ...[
-                        const SizedBox(height: 12),
-                        Center(child: _DiscardedNote(state.discarded)),
-                      ],
-                    ],
-                  )
-                : _FeedList(state: state),
-          );
-        },
+    return feed.when(
+      skipLoadingOnRefresh: false,
+      loading: () => const LoadingIndicator(message: 'Carregando o feed...'),
+      error: (error, _) => ErrorStateView(
+        message: error is RelaysUnavailableException
+            ? error.message
+            : 'Não foi possível carregar o feed.',
+        onRetry: () => _retry(ref),
       ),
+      data: (state) {
+        if (!state.followsAnyone) {
+          return EmptyStateView(
+            icon: Icons.people_outline_rounded,
+            title: 'Você ainda não segue ninguém',
+            description: 'Busque pessoas pelo nome de usuário (ou pelo ID '
+                'em Treinos → Da rede) e o que elas publicarem aparece aqui.',
+            actionLabel: 'Buscar pessoas',
+            onAction: () => context.go(AppRoutes.peopleSearch),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(feedProvider.future).then(
+                (_) {},
+                onError: (Object _) {},
+              ),
+          child: state.workouts.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 120),
+                    const _NobodyPublished(),
+                    // Tudo descartado não é "ninguém publicou": avisa.
+                    if (state.discarded > 0) ...[
+                      const SizedBox(height: 12),
+                      Center(child: _DiscardedNote(state.discarded)),
+                    ],
+                  ],
+                )
+              : _FeedList(state: state),
+        );
+      },
     );
   }
 }
@@ -126,14 +222,15 @@ class _DiscardedNote extends StatelessWidget {
   }
 }
 
-class _FeedList extends StatelessWidget {
+class _FeedList extends ConsumerWidget {
   const _FeedList({required this.state});
 
   final FeedState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final workouts = state.workouts;
+    final authors = ref.watch(authorProfilesProvider);
     // Itens: treinos + rodapé (aviso de descartados e/ou "Carregar mais").
     final hasFooter = state.hasMore || state.discarded > 0;
 
@@ -148,6 +245,7 @@ class _FeedList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: FeedWorkoutCard(
                 workout: workouts[index],
+                author: authors[workouts[index].pubkey],
                 footer: LikeButton(workout: workouts[index]),
               ),
             );
