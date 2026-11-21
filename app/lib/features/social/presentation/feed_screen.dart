@@ -59,7 +59,7 @@ class FeedScreen extends ConsumerWidget {
             return EmptyStateView(
               icon: Icons.people_outline_rounded,
               title: 'Você ainda não segue ninguém',
-              description: 'Siga alguém pelo npub em Treinos → Da rede, e os '
+              description: 'Busque alguém pelo ID em Treinos → Da rede, e os '
                   'treinos publicados por essa pessoa aparecem aqui.',
               actionLabel: 'Seguir alguém',
               onAction: () => context.go(AppRoutes.workouts),

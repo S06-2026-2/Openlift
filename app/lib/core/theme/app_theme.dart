@@ -1,8 +1,11 @@
-// Design system: paleta neutra (escala zinc), tipografia e ThemeData do app.
+// Design system: paleta "energia" (academia, cardio, vida fitness),
+// tipografia e ThemeData do app, nos temas claro e escuro.
 //
-// Direção visual: minimalista. A cor primária é a própria "tinta" do texto
-// (quase preto no claro, quase branco no escuro); hierarquia vem de peso,
-// tamanho e espaçamento, não de cor. Bordas finas no lugar de sombras.
+// Direção visual: fundo neutro e frio, com cor de ação forte. Laranja-energia
+// é a cor primária (botões, seleção, gráficos); verde-volt é o destaque
+// (conquistas, "curtido", o que está em alta) e ciano lembra cardio.
+// Hierarquia ainda vem de peso, tamanho e espaçamento; bordas finas no lugar
+// de sombras.
 
 import 'package:flutter/material.dart';
 
@@ -10,29 +13,33 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // Primária = tinta do texto em cada tema.
-  static const Color primaryColor = Color(0xFF18181B); // zinc-900
-  static const Color primaryColorDark = Color(0xFFFAFAFA); // zinc-50
+  // Marca
+  static const Color primaryColor = Color(0xFFF04A12); // laranja-energia
+  static const Color primaryColorDark = Color(0xFFFF6A2B);
+  static const Color voltColor = Color(0xFF5DA700); // verde-volt (claro)
+  static const Color voltColorDark = Color(0xFFC6FF3D);
+  static const Color cardioColor = Color(0xFF0891B2); // ciano (claro)
+  static const Color cardioColorDark = Color(0xFF22D3EE);
 
   static const Color dangerColor = Color(0xFFDC2626);
   static const Color dangerColorDark = Color(0xFFF87171);
   static const Color successColor = Color(0xFF16A34A);
 
   // Neutros — claro
-  static const Color lightBackground = Color(0xFFFAFAFA);
+  static const Color lightBackground = Color(0xFFF5F6FA);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF4F4F5);
-  static const Color lightBorder = Color(0xFFE4E4E7);
-  static const Color lightText = Color(0xFF09090B);
-  static const Color lightMuted = Color(0xFF71717A);
+  static const Color lightSurfaceVariant = Color(0xFFECEEF4);
+  static const Color lightBorder = Color(0xFFDDE1EA);
+  static const Color lightText = Color(0xFF0D1018);
+  static const Color lightMuted = Color(0xFF666D7E);
 
   // Neutros — escuro
-  static const Color darkBackground = Color(0xFF09090B);
-  static const Color darkSurface = Color(0xFF111113);
-  static const Color darkSurfaceVariant = Color(0xFF1C1C1F);
-  static const Color darkBorder = Color(0xFF27272A);
-  static const Color darkText = Color(0xFFFAFAFA);
-  static const Color darkMuted = Color(0xFFA1A1AA);
+  static const Color darkBackground = Color(0xFF0A0C11);
+  static const Color darkSurface = Color(0xFF12151D);
+  static const Color darkSurfaceVariant = Color(0xFF1B1F2A);
+  static const Color darkBorder = Color(0xFF272C3A);
+  static const Color darkText = Color(0xFFF5F6FA);
+  static const Color darkMuted = Color(0xFF9AA1B2);
 
   /// Escala do mapa de calor (RF-41), do menor volume para o maior. A
   /// célula sem treino usa `surfaceContainerHighest` do tema.
@@ -55,10 +62,14 @@ class AppTheme {
         const ColorScheme.light(
           primary: primaryColor,
           onPrimary: Colors.white,
-          primaryContainer: lightSurfaceVariant,
-          onPrimaryContainer: lightText,
-          secondary: lightMuted,
+          primaryContainer: Color(0xFFFFE3D6),
+          onPrimaryContainer: Color(0xFF5A1600),
+          secondary: voltColor,
           onSecondary: Colors.white,
+          secondaryContainer: Color(0xFFE4F7C4),
+          onSecondaryContainer: Color(0xFF1E3A00),
+          tertiary: cardioColor,
+          onTertiary: Colors.white,
           error: dangerColor,
           onError: Colors.white,
           surface: lightSurface,
@@ -71,8 +82,8 @@ class AppTheme {
           surfaceContainerHighest: lightSurfaceVariant,
           outline: lightBorder,
           outlineVariant: lightBorder,
-          inverseSurface: Color(0xFF18181B),
-          onInverseSurface: Color(0xFFFAFAFA),
+          inverseSurface: Color(0xFF151923),
+          onInverseSurface: Color(0xFFF5F6FA),
         ),
         background: lightBackground,
       );
@@ -81,13 +92,17 @@ class AppTheme {
   static ThemeData dark() => _build(
         const ColorScheme.dark(
           primary: primaryColorDark,
-          onPrimary: Color(0xFF09090B),
-          primaryContainer: darkSurfaceVariant,
-          onPrimaryContainer: darkText,
-          secondary: darkMuted,
-          onSecondary: Color(0xFF09090B),
+          onPrimary: Colors.white,
+          primaryContainer: Color(0xFF3D1A0C),
+          onPrimaryContainer: Color(0xFFFFD2BF),
+          secondary: voltColorDark,
+          onSecondary: Color(0xFF142300),
+          secondaryContainer: Color(0xFF243512),
+          onSecondaryContainer: Color(0xFFDFFF9E),
+          tertiary: cardioColorDark,
+          onTertiary: Color(0xFF00333D),
           error: dangerColorDark,
-          onError: Color(0xFF09090B),
+          onError: Color(0xFF0A0C11),
           surface: darkSurface,
           onSurface: darkText,
           onSurfaceVariant: darkMuted,
@@ -98,8 +113,8 @@ class AppTheme {
           surfaceContainerHighest: darkSurfaceVariant,
           outline: darkBorder,
           outlineVariant: darkBorder,
-          inverseSurface: Color(0xFFFAFAFA),
-          onInverseSurface: Color(0xFF09090B),
+          inverseSurface: Color(0xFFF5F6FA),
+          onInverseSurface: Color(0xFF0A0C11),
         ),
         background: darkBackground,
       );
@@ -172,7 +187,7 @@ class AppTheme {
         border: inputBorder(scheme.outline),
         enabledBorder: inputBorder(scheme.outline),
         disabledBorder: inputBorder(scheme.outline.withValues(alpha: 0.6)),
-        focusedBorder: inputBorder(scheme.onSurface, 1.5),
+        focusedBorder: inputBorder(scheme.primary, 1.5),
         errorBorder: inputBorder(scheme.error),
         focusedErrorBorder: inputBorder(scheme.error, 1.5),
         errorStyle: TextStyle(color: scheme.error, fontSize: 12),
@@ -207,7 +222,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: scheme.onSurface,
+          foregroundColor: scheme.primary,
           shape: smallShape,
           textStyle: buttonText.copyWith(fontWeight: FontWeight.w500),
         ),
@@ -233,7 +248,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         height: 64,
-        indicatorColor: scheme.surfaceContainerHighest,
+        indicatorColor: scheme.primary.withValues(alpha: 0.16),
         indicatorShape: smallShape,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
@@ -250,16 +265,16 @@ class AppTheme {
           (states) => IconThemeData(
             size: 22,
             color: states.contains(WidgetState.selected)
-                ? scheme.onSurface
+                ? scheme.primary
                 : scheme.onSurfaceVariant,
           ),
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: background,
-        indicatorColor: scheme.surfaceContainerHighest,
+        indicatorColor: scheme.primary.withValues(alpha: 0.16),
         indicatorShape: smallShape,
-        selectedIconTheme: IconThemeData(color: scheme.onSurface, size: 22),
+        selectedIconTheme: IconThemeData(color: scheme.primary, size: 22),
         unselectedIconTheme:
             IconThemeData(color: scheme.onSurfaceVariant, size: 22),
         selectedLabelTextStyle: TextStyle(
@@ -325,11 +340,11 @@ class AppTheme {
         shape: smallShape,
       ),
       badgeTheme: BadgeThemeData(
-        backgroundColor: scheme.onSurface,
+        backgroundColor: scheme.primary,
         smallSize: 7,
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.onSurface,
+        color: scheme.primary,
         circularTrackColor: Colors.transparent,
       ),
       tooltipTheme: TooltipThemeData(

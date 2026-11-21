@@ -108,14 +108,26 @@ void main() {
     expect(find.text('0 TREINOS NA REDE'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), npubA);
-    await tester.tap(find.byTooltip('Seguir'));
+    await tester.tap(find.byTooltip('Buscar'));
+    await tester.pumpAndSettle();
+
+    // A busca mostra a pessoa e o que ela publicou, antes de seguir.
+    expect(find.text('Pessoa encontrada'), findsOneWidget);
+    expect(
+      find.text('1 treino publicado · último em 13/10/2026'),
+      findsOneWidget,
+    );
+    expect(find.text('0 TREINOS NA REDE'), findsOneWidget);
+
+    await tester.tap(find.text('Seguir'));
     await tester.pumpAndSettle();
 
     expect(find.text('1 TREINO NA REDE'), findsOneWidget);
     expect(find.text('Lido de 3 de 3 relays'), findsOneWidget);
     expect(find.text('Supino reto'), findsOneWidget);
     expect(find.text('2 séries · 1.280 kg'), findsOneWidget);
-    expect(find.text(_short(npubA)), findsNWidgets(2)); // chip + autor
+    // Resultado da busca + chip de quem sigo + autor do treino.
+    expect(find.text(_short(npubA)), findsNWidgets(3));
   });
 
   testWidgets('os próprios treinos aparecem como "Você"', (tester) async {
@@ -184,16 +196,20 @@ void main() {
     );
   });
 
-  testWidgets('npub inválido mostra erro e não entra na lista', (tester) async {
+  testWidgets('ID inválido mostra erro e não entra na lista', (tester) async {
     final device = _Device(FakeNostrRelayService(), userId: 1);
     await device.open(tester);
     await device.openNetworkTab(tester);
 
     await tester.enterText(find.byType(TextField), 'npub1naoexiste');
-    await tester.tap(find.byTooltip('Seguir'));
+    await tester.tap(find.byTooltip('Buscar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Isso não é um npub válido.'), findsOneWidget);
+    expect(
+      find.text('Esse ID não é válido. Confira se colou ele inteiro.'),
+      findsOneWidget,
+    );
+    expect(find.text('Pessoa encontrada'), findsNothing);
     expect(find.byType(InputChip), findsNothing);
   });
 
