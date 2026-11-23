@@ -1,7 +1,8 @@
 // Navegação declarativa (go_router) com as rotas do app e proteção por sessão.
 //
 // Rotas: /login, /signup, /dashboard, /workouts, /workouts/new, /social/feed,
-// /social/compose, /profile.
+// /social/compose, /social/search, /social/profile/edit, /social/u/:username,
+// /profile.
 //
 // As 4 áreas principais (Início, Treinos, Social, Perfil) ficam dentro da
 // AppShell (navegação inferior/lateral). Formulários e "Compartilhar" abrem em
@@ -20,13 +21,16 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/signup_screen.dart';
 import '../../features/auth/presentation/widgets/import_identity_sheet.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
+import '../../features/social/presentation/compose_post_screen.dart';
 import '../../features/social/presentation/feed_screen.dart';
+import '../../features/social/presentation/profile_screens.dart';
 import '../../features/workouts/presentation/workout_form_screen.dart';
 import '../../features/workouts/presentation/workout_history_screen.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_shell.dart';
 import '../../shared/widgets/coming_soon_view.dart';
 import '../../shared/widgets/loading_indicator.dart';
+import '../../shared/widgets/theme_toggle_button.dart';
 import 'app_routes.dart';
 
 class _RouterRefresh extends ChangeNotifier {
@@ -98,17 +102,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.compose,
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Compartilhar'),
-            leading: BackButton(onPressed: () => context.go(AppRoutes.feed)),
-          ),
-          body: const ComingSoonView(
-            icon: Icons.ios_share_rounded,
-            title: 'Compartilhar treino',
-            description: 'Publique um treino ou artigo na rede aberta NOSTR. '
-                'Disponível nas próximas versões.',
-          ),
+        builder: (context, state) => const ComposePostScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.peopleSearch,
+        builder: (context, state) => const PeopleSearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profileEdit,
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/social/u/:username',
+        builder: (context, state) => PersonProfileScreen(
+          username: state.pathParameters['username'] ?? '',
         ),
       ),
       ShellRoute(
@@ -146,7 +153,10 @@ class _ProfilePlaceholder extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil')),
+      appBar: AppBar(
+        title: const Text('Perfil'),
+        actions: const [ThemeToggleButton(), SizedBox(width: 8)],
+      ),
       body: ComingSoonView(
         icon: Icons.person_outline_rounded,
         title: 'Perfil em breve',

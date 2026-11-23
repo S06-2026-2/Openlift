@@ -103,6 +103,17 @@ class FakeNostrRelayService implements NostrRelayService {
     final kinds = filter['kinds'] as List?;
     final authors = filter['authors'] as List?;
     final until = filter['until'] as int?;
+    // Filtros de tag (`#e`, `#E`...): o evento precisa ter uma tag com a
+    // letra e um dos valores pedidos.
+    for (final entry in filter.entries) {
+      if (!entry.key.startsWith('#')) continue;
+      final letter = entry.key.substring(1);
+      final values = entry.value as List;
+      final hit = event.tags.any(
+        (tag) => tag.length > 1 && tag[0] == letter && values.contains(tag[1]),
+      );
+      if (!hit) return false;
+    }
     return (kinds == null || kinds.contains(event.kind)) &&
         (authors == null || authors.contains(event.pubkey)) &&
         (until == null || event.createdAt <= until);
