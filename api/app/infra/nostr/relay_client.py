@@ -22,6 +22,7 @@ import json
 import logging
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import websockets
@@ -43,6 +44,17 @@ class RelayDisconnected(Exception):
 
 def _default_connect(url: str) -> Any:
     return websockets.connect(url, open_timeout=10, close_timeout=2, max_size=2**22)
+
+
+@dataclass(frozen=True)
+class FetchReport:
+    """Resultado de uma leitura: eventos verificados e quantos relays
+    responderam até o fim (`EOSE`). O replay usa isso para não apagar nada
+    quando nenhum relay respondeu."""
+
+    events: list[Event]
+    relays_ok: int
+    relays_total: int
 
 
 class RelayClient:
@@ -75,11 +87,16 @@ class RelayClient:
     async def fetch(self, filters: Sequence[Filter]) -> list[Event]:
         """Eventos verificados que casam com `filters`, de todos os relays,
         sem repetição, do mais antigo para o mais novo."""
+        return (await self.fetch_report(filters)).events
+
+    async def fetch_report(self, filters: Sequence[Filter]) -> FetchReport:
+        """Como `fetch`, dizendo também quantos relays responderam."""
         if not filters or not self.relay_urls:
-            return []
-        per_relay = await asyncio.gather(
+            return FetchReport(events=[], relays_ok=0, relays_total=len(self.relay_urls))
+        results = await asyncio.gather(
             *(self._fetch_with_retry(url, filters) for url in self.relay_urls)
         )
+        per_relay = [events for events, _ in results]
         seen: dict[str, Event] = {}
         for url, events in zip(self.relay_urls, per_relay, strict=True):
             for event in events:
@@ -95,14 +112,21 @@ class RelayClient:
                     )
                     continue
                 seen[event["id"]] = event
-        return sorted(seen.values(), key=lambda e: (e["created_at"], e["id"]))
+        return FetchReport(
+            events=sorted(seen.values(), key=lambda e: (e["created_at"], e["id"])),
+            relays_ok=sum(1 for _, ok in results if ok),
+            relays_total=len(self.relay_urls),
+        )
 
-    async def _fetch_with_retry(self, url: str, filters: Sequence[Filter]) -> list[Event]:
+    async def _fetch_with_retry(
+        self, url: str, filters: Sequence[Filter]
+    ) -> tuple[list[Event], bool]:
+        """Eventos recebidos e se o relay respondeu até o fim."""
         received: list[Event] = []
         for attempt in range(self.max_retries + 1):
             try:
                 await self._fetch_once(url, filters, received)
-                return received
+                return received, True
             except Exception as exc:  # noqa: BLE001 — qualquer falha de rede vira nova tentativa
                 if attempt == self.max_retries:
                     logger.error(
@@ -111,7 +135,7 @@ class RelayClient:
                         type(exc).__name__,
                         extra={"relay": url, "attempts": attempt + 1},
                     )
-                    return received
+                    return received, False
                 delay = self.backoff_base * 2**attempt
                 logger.warning(
                     "Falha ao ler o relay (%s); nova tentativa em %.1f s",
@@ -120,7 +144,7 @@ class RelayClient:
                     extra={"relay": url, "attempt": attempt + 1},
                 )
                 await self._sleep(delay)
-        return received  # pragma: no cover — o laço sempre retorna
+        return received, False  # pragma: no cover — o laço sempre retorna
 
     async def _fetch_once(self, url: str, filters: Sequence[Filter], received: list[Event]) -> None:
         subscription = uuid.uuid4().hex[:16]

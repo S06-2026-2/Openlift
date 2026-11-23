@@ -33,6 +33,17 @@ docker compose run --rm api python -m app.worker
 
 Processo separado da API (ADR-0011: APScheduler, sem Redis). A cada `NOSTR_SYNC_INTERVAL_SECONDS` ele lê dos relays de `NOSTR_RELAYS` os likes (`kind 7`, NIP-25) sobre os treinos publicados e projeta na tabela `likes`. Só entra evento com assinatura verificada (RF-51); um like por pessoa por treino (RN-06); `content` `"-"` (dislike) é ignorado. A tabela é cache: apagar e rodar o worker de novo reconstrói a mesma contagem (ADR-0004). O serviço `worker` do `docker compose` entra no OPS-07.
 
+## Replay das curtidas (RF-53)
+
+Apaga o cache `likes` e reconstrói a partir dos `kind 7` nos relays, com a mesma projeção do worker. Lê os relays antes de apagar; se nenhum responder, não apaga nada.
+
+```bash
+docker compose run --rm api python -m app.cli replay --dry-run  # simulação
+docker compose run --rm api python -m app.cli replay
+```
+
+Passo a passo e roteiro da demo em [`docs/runbook/replay.md`](../docs/runbook/replay.md).
+
 ## Migrations
 
 ```bash
