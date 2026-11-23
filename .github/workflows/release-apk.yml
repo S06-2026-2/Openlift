@@ -1,0 +1,106 @@
+name: Release APK
+
+# Gera o APK Android e anexa à Release do GitHub (ADR-0001: web + APK).
+#
+# - Tag `v*` (ex.: `git tag v0.4.0 && git push origin v0.4.0`): cria a Release
+#   com o APK e as notas geradas a partir dos PRs.
+# - Execução manual: só gera o APK como artifact da execução, sem Release.
+#
+# Configuração (Settings → Secrets and variables → Actions):
+# - Variável `APK_API_URL` (opcional): API que o APK usa. Padrão: produção no Railway.
+# - Secrets da chave de assinatura (opcionais, mas necessários para o usuário
+#   conseguir atualizar o app sem desinstalar): `ANDROID_KEYSTORE_BASE64`,
+#   `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+#   Sem eles o APK sai assinado com uma chave de debug descartável.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  API_URL: ${{ vars.APK_API_URL || 'https://openlift-web-production.up.railway.app/api/v1' }}
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Configure signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Sem ANDROID_KEYSTORE_BASE64: APK assinado com chave de debug (atualizar exige desinstalar)."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storeFile=upload-keystore.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+
+      - name: Version
+        id: version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            name="${GITHUB_REF_NAME#v}"
+          else
+            name="$(grep -E '^version:' pubspec.yaml | sed -E 's/version: *([^+]*).*/\1/')"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.name }}" \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=API_URL="$API_URL"
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             "build/app/outputs/flutter-apk/openlift-${{ steps.version.outputs.name }}.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openlift-${{ steps.version.outputs.name }}-apk
+          path: app/build/app/outputs/flutter-apk/openlift-*.apk
+          if-no-files-found: error
+
+      - name: Publish Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/app/outputs/flutter-apk/openlift-*.apk
+          generate_release_notes: true
