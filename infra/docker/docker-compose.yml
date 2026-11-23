@@ -1,5 +1,10 @@
-# Orquestração local: API + banco de dados (Sprint 1).
-# O worker de sincronização NOSTR entra aqui no OPS-07 (ADR-0011: sem Redis).
+# Orquestração local: banco, API, worker NOSTR e Adminer (OPS-07, RNF-10).
+#
+#   docker compose up -d --build
+#
+# A API aplica as migrations e o seed ao subir (entrypoint.sh); o worker sobe
+# depois que a API responde /health. Nenhum comando manual é necessário.
+# Relays: NOSTR_RELAYS do ambiente ou a lista padrão abaixo (ADR-0007).
 
 services:
   db:
@@ -32,9 +37,11 @@ services:
       context: ../..
       dockerfile: infra/docker/Dockerfile.api
     restart: unless-stopped
-    environment:
+    environment: &api-env
       DATABASE_URL: postgresql+psycopg://openlift:openlift@db:5432/openlift
       ENV: development
+      RUN_MIGRATIONS: "true"
+      NOSTR_RELAYS: ${NOSTR_RELAYS:-wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net}
     ports:
       - "8000:8000"
     volumes:
@@ -43,9 +50,31 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      # A imagem slim não tem curl; o Python da própria imagem faz o GET.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
 
-# OPS-07: service `worker` — mesma imagem da API, comando `python -m app.worker`
-# (APScheduler; ADR-0011 decidiu sem Redis nem Celery)
+  # Worker de sincronização NOSTR (ADR-0011): mesma imagem e variáveis da API,
+  # sem migrations (a API já aplicou), lendo os relays a cada
+  # NOSTR_SYNC_INTERVAL_SECONDS (padrão 300 s).
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      RUN_MIGRATIONS: "false"
+    volumes:
+      - ../../api:/app
+    command: python -m app.worker
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   db_data:

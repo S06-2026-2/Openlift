@@ -17,7 +17,9 @@ def test_health_returns_200_and_status_ok(client: TestClient) -> None:
     # Assert
     assert response.status_code == 200
     data = response.json()
-    assert data == {"status": "ok"}
+    assert data["status"] == "ok"
+    assert data["database"] == "ok"
+    assert data["worker"]["status"] == "unknown"  # nenhum worker rodou no teste
 
 
 def test_version_returns_app_version_and_environment(client: TestClient) -> None:

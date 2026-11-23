@@ -13,4 +13,5 @@ from app.domain.models.ranking import RankingEntry  # noqa: F401
 from app.domain.models.set import WorkoutSet  # noqa: F401
 from app.domain.models.shared_event import SharedEvent  # noqa: F401
 from app.domain.models.user import User  # noqa: F401
+from app.domain.models.worker_heartbeat import WorkerHeartbeat  # noqa: F401
 from app.domain.models.workout import Workout  # noqa: F401

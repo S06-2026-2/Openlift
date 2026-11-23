@@ -6,15 +6,15 @@ Backend FastAPI + PostgreSQL do OpenLift. Os comandos abaixo rodam de dentro de 
 
 ```bash
 cd infra/docker
-docker compose up -d                                  # Postgres + API + Adminer
-docker compose run --rm api alembic upgrade head      # aplica as migrations
-docker compose run --rm api python -m app.infra.db.seed   # popula a biblioteca de exercícios
+docker compose up -d --build   # Postgres + API + worker NOSTR + Adminer
 ```
+
+Ao subir, a API aplica as migrations e roda o seed (`infra/docker/entrypoint.sh`; `RUN_MIGRATIONS=false` pula). O `worker` sobe depois que a API responde `/health`.
 
 | Endereço | O que é |
 |---|---|
 | http://localhost:8000/docs | Swagger (use **Authorize** com o `access_token` do login) |
-| http://localhost:8000/health | Saúde da API (checa o banco) |
+| http://localhost:8000/health | Saúde: `database` (503 `database_unavailable` se o Postgres cair) e `worker` (`ok`, `stale` ou `unknown`, pelo último ciclo) |
 | http://localhost:8080 | Adminer: sistema PostgreSQL, servidor `db`, usuário/senha/banco `openlift` |
 
 ## Seed da biblioteca de exercícios
@@ -31,7 +31,7 @@ Cria 10 grupos musculares (peito, costas, ombros, bíceps, tríceps, quadríceps
 docker compose run --rm api python -m app.worker
 ```
 
-Processo separado da API (ADR-0011: APScheduler, sem Redis). A cada `NOSTR_SYNC_INTERVAL_SECONDS` ele lê dos relays de `NOSTR_RELAYS` os likes (`kind 7`, NIP-25) sobre os treinos publicados e projeta na tabela `likes`. Só entra evento com assinatura verificada (RF-51); um like por pessoa por treino (RN-06); `content` `"-"` (dislike) é ignorado. A tabela é cache: apagar e rodar o worker de novo reconstrói a mesma contagem (ADR-0004). O serviço `worker` do `docker compose` entra no OPS-07.
+Processo separado da API (ADR-0011: APScheduler, sem Redis). A cada `NOSTR_SYNC_INTERVAL_SECONDS` ele lê dos relays de `NOSTR_RELAYS` os likes (`kind 7`, NIP-25) sobre os treinos publicados e projeta na tabela `likes`. Só entra evento com assinatura verificada (RF-51); um like por pessoa por treino (RN-06); `content` `"-"` (dislike) é ignorado. A tabela é cache: apagar e rodar o worker de novo reconstrói a mesma contagem (ADR-0004). No `docker compose`, ele é o serviço `worker`. Cada ciclo grava um heartbeat em `worker_heartbeats`, que o `/health` mostra.
 
 ## Replay das curtidas (RF-53)
 
@@ -74,6 +74,8 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `JWT_EXPIRATION_MINUTES` / `JWT_REFRESH_EXPIRATION_DAYS` | Duração do access e do refresh token |
 | `CORS_ORIGIN_REGEX` | Origens liberadas no CORS (padrão: qualquer porta em `localhost`) |
 | `NOSTR_RELAYS` | Relays lidos pelo backend, separados por vírgula (ADR-0007). Sem valor, o backend não lê relay nenhum |
+| `LOG_LEVEL` | Nível dos logs JSON da API e do worker (`DEBUG`, `INFO`, `WARNING`, `ERROR`; padrão `INFO`) |
+| `RUN_MIGRATIONS` | `true` (padrão) aplica migrations e seed na subida do container; o `worker` usa `false` |
 | `NOSTR_SYNC_INTERVAL_SECONDS` | Intervalo entre ciclos do worker (`python -m app.worker`), mínimo 10, padrão 300 |
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 | `PUBLIC_BASE_URL` | URL pública da API (padrão `http://localhost:8000`): domínio do NIP-05 (`usuario@host`) e base das URLs de foto (ADR-0012) |
@@ -114,6 +116,10 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 Limites de série (RN-07): carga 0–1000 kg, repetições 1–500, RPE 1–10 (opcional), tipo `warmup` / `normal` / `failure`. Treino de outro usuário responde **404**, igual a um inexistente.
 
 `visibility`, `publish_status` e `d_tag` só mudam pelas rotas de publicação, nunca pelo `PATCH`. O backend não assina nem recebe chave privada: os corpos de `publication*` recusam qualquer campo extra (422). Os eventos registrados ficam em `shared_events` (um por publicação); o treino expõe só o `d_tag`.
+
+## Logs
+
+API e worker escrevem **uma linha JSON por registro** em stdout (`timestamp`, `level`, `logger`, `message` e campos como `event_id`, `relay`, `method`, `path`, `status_code`, `duration_ms`). Cada requisição gera uma linha em `openlift.http`, sem corpo, cabeçalhos ou query string. Qualquer `nsec1…` ou hex de 64 caracteres que apareça numa mensagem ou traceback vira `[REDACTED]` (RNF-01); `event_id` e `pubkey`, que são públicos, são mantidos.
 
 ## Erros
 

@@ -1,6 +1,6 @@
 # OpenLift — Contexto do Projeto
 
-**Atualizado:** 18/10/2026 (estado do fim da Sprint 1 — §4, §8 e §9) · **Repo:** github.com/S06-2026-2/Openlift (branch `main`) · **Entrega final:** Demo 4, 03/12/2026
+**Atualizado:** 22/11/2026 (estado da Sprint 4, véspera do Auxílio 4 — §4, §5, §8 e §9) · **Repo:** github.com/S06-2026-2/Openlift (branch `main`) · **Entrega final:** Demo 4, 03/12/2026
 
 > **Para que serve este arquivo.** É a fonte única de contexto do projeto: o que o OpenLift é, o que já existe, o que foi decidido, o que falta fazer e o que ainda está aberto. Dois usos:
 > 1. **Time** — leitura obrigatória antes de pegar tarefa. Se algo aqui estiver errado ou desatualizado, corrige aqui primeiro, depois no código.
@@ -68,31 +68,38 @@ Já passou: Sprint de fundação (semanas 1–2) e **Demo 2 em 17/09**.
 
 ## 4. Estado atual do repositório
 
-Fim da Sprint 1 (18/10/2026): 164 commits em `main`. Estrutura:
+Sprint 4 (22/11/2026), véspera do Auxílio 4. Estrutura:
 
 ```
 OpenLift/
-├── app/                        # Frontend Flutter
-├── api/                        # Backend FastAPI + PostgreSQL
-├── infra/docker/               # docker-compose + Dockerfiles
+├── app/                        # Frontend Flutter (web + APK)
+├── api/                        # Backend FastAPI + PostgreSQL + worker NOSTR
+├── infra/docker/               # docker-compose (db, api, worker, adminer) + Dockerfiles
 ├── design/wireframes/sprint-1/ # Wireframes das 5 telas núcleo
-├── docs/                       # este arquivo, adr/, requisitos/, qa/, ia/, arquitetura/, runbook/
+├── docs/                       # este arquivo, adr/, requisitos/, nips/, qa/, ia/, arquitetura/, runbook/, retros/, lgpd.md
 ├── .agents/skills/             # skills dos agentes de IA
-├── .github/workflows/          # CI (lint, testes, gitleaks, commitlint) e CD
+├── .github/workflows/          # CI (lint, testes, cobertura, gitleaks, commitlint), CD e agentes
 ├── AGENTS.md                   # instruções para agentes de IA
 ├── implementation.md           # roadmap original de 12 semanas (histórico)
 └── README.md
 ```
 
-**Entrega da Sprint 1:** registro de treino ponta a ponta contra API real — ✅ feito (cadastro, login, criar/editar/excluir treino e histórico com filtros, no app contra a API e o Postgres). **ADR-003 na primeira semana** — ❌ não fechado: NOSTR-01 (#22) segue aberto e é a dependência crítica da Sprint 2.
+**Entregas por sprint:**
+
+| Sprint | Entrega prevista | Resultado |
+|---|---|---|
+| 1 | Registro de treino ponta a ponta | ✅ no prazo; o ADR-003 atrasou e fechou em 19/10 (#68) |
+| 2 | Identidade + treino publicado no relay + lido em outro dispositivo | ✅ na Demo 3 (29/10): FE-04 (#89), FE-05 (#93), FE-06 (#94), BE-05 (#74), BE-S2-03 (#90) |
+| 3 | Feed social + like + worker | ⚠️ entregue com atraso, entre 17/11 e 19/11: follow (#120), feed (#126), like (#127), worker e `/social/likes` (#121–#124). Na janela da sprint (30/10 → 09/11) entrou 1 PR. Ver [`retros/sprint-3.md`](retros/sprint-3.md) |
+| 4 | Dashboard, heatmap, ranking, relay próprio | 🟡 dashboard e mapa de calor (#144, #145, #155), replay e rate limiting (#155), rede social do ADR-0012 (#147–#152). **Não entraram:** ranking (BE-15/FE-12) e relay `strfry` próprio (OPS-04), ambos candidatos a corte |
 
 | Frente | Estado | Detalhe |
 |---|---|---|
-| Backend | **Sprint 1 fechada** | Auth com register/login/refresh e JWT (#37, #43); todas as tabelas do ERD migradas (3 migrations), incluindo `exercises`, `muscle_groups`, `shared_events`, `likes` e `rankings` (#44); seed idempotente com 10 grupos e 40 exercícios; `GET /exercises`; CRUD de treinos e séries com isolamento por usuário e limites do RN-07 (#45); erros no formato `{detail, code}`; CORS para o app web. **125 testes, 98% de cobertura**, mais testes de integração com Postgres no CI (#46). Falta da Sprint 2: `POST /me/nostr-identity` |
-| Frontend | **Sprint 1 fechada** | Camada de rede com refresh automático em 401 e sessão em armazenamento seguro (#39); login e cadastro reais (#40); Novo Treino, histórico com filtro por data e exercício, edição e exclusão (#41); redesign minimalista com navegação inferior (celular) e lateral (web) (#51). **130 testes.** Dashboard, Social e Perfil ainda são telas "em breve". Desalinhamentos conhecidos: o app aceita RPE 0 (a API exige 1–10) e não pagina o histórico |
-| DevOps | **~80%** | Docker (Postgres + API + Adminer); CI com lint, testes, cobertura, **gitleaks e commitlint** (#52); **branch protection** com 1 aprovação, checks obrigatórios e squash merge (#31); pre-commit local (#53); imagem da API publicada no GHCR a cada merge (#49). Faltam: servidor de staging (#16), migrations e seed automáticos no `docker compose up` (RNF-10), logs estruturados e `/health` estendido (em branches, sem PR) |
-| Agente de IA | **fechado** | `AGENTS.md` com regras invioláveis; skills em `.agents/skills/` (`generate-tests`, `criar-endpoint-fastapi`, `gerar-teste-flutter`, `validar-evento-nostr`, `revisar-pr`, `escrever-adr`); registro de uso em `docs/ia/registro.md` (#56). PR #2 resolvido (conteúdo absorvido por #3/#18/#19). O reporter de CI coleta artefatos, mas ainda não chama modelo (#20, em teste) |
-| Documentação | **quase fechada** | ADRs 0001, 0002 e 0004–0010 (#54); requisitos e matriz de rastreabilidade (#61); arquitetura (#62); runbook (#63); critérios da Sprint 2 (#55). Em PR: prompts e retros. Faltam: mini-NIP + ADR-0003 (#22) e `lgpd.md` (decisão do grupo) |
+| Backend | **Sprints 1–4** | Auth e JWT; CRUD de treinos com RN-07; identidade NOSTR (#74, #80); registro de publicação com RN-01 e RN-08 (#90, #81); cliente de relay com verificação de assinatura BIP-340 (#122); worker de likes com APScheduler (#121, #123); `GET /social/likes` (#124); `/stats/volume`, `/stats/muscle-groups` e `/stats/heatmap` (#144, #155); comando de replay (#155, [`runbook/replay.md`](runbook/replay.md)); rate limiting (#155); perfis com nome único e NIP-05 (#148); fotos recodificadas sem EXIF (#149); logs JSON com redação de chave e `/health` com banco e worker (OPS-08). **388 testes, 97% de cobertura** (22/11), gate de 60% no CI (#128) |
+| Frontend | **Sprints 1–4** | Identidade invisível + importação de `nsec` (#89); publicar `kind 1301` com status (#93); ler do relay (#94); seguir com `kind 3` (#120); feed de quem sigo (#126); curtir com `kind 7` (#127); RPE 1–10 e histórico paginado (#125); dashboard com volume, mapa de calor e frequência (#145); tema claro/escuro (#146); "ID" no lugar de `npub` (#147); perfil com nome de usuário (#150); postar foto `kind 20` (#151); comentar com `kind 1111` (#152). A aba **Perfil** continua "em breve" |
+| DevOps | **~90%** | Staging no Railway com deploy opcional (#99, #100); gate de cobertura backend e frontend (#128); relatório semanal por agente (#103); **`docker compose up` sobe tudo sem comando manual**: migrations e seed no entrypoint, serviço `worker` e healthcheck da API (OPS-07). Falta: o serviço `worker` no Railway (configuração manual, ver [`runbook/subir-ambiente.md`](runbook/subir-ambiente.md)) e o relay próprio (OPS-04) |
+| Agente de IA | **fechado** | `AGENTS.md`, skills em `.agents/skills/`, registro em `docs/ia/registro.md`; agentes de CI (Gemini #88, resumo de PR #105, relatório semanal #103) |
+| Documentação | **quase fechada** | ADRs 0001–0011 aceitos; **ADR-0012 proposto, aguardando aprovação do grupo**; critérios de QA das Sprints 2, 3 e 4; retros das Sprints 1–3 com os fatos (a parte da reunião é do time); [`lgpd.md`](lgpd.md) com os fatos (as decisões são do grupo). Faltam: `prompts/` (o PR #64 não entrou) e as retros das Sprints 4 e 5 |
 
 **Bug conhecido (ambiente, não código):** em pasta de projeto com acento no caminho, `flutter analyze` quebra. `flutter test` e `flutter run` funcionam normalmente, e o CI não tem esse problema. Outros problemas de ambiente e como resolver: [`docs/runbook/problemas-comuns.md`](runbook/problemas-comuns.md).
 
@@ -103,17 +110,15 @@ Passo a passo completo em [`docs/runbook/subir-ambiente.md`](runbook/subir-ambie
 ```bash
 # Backend + banco
 cd infra/docker
-docker compose up -d
-docker compose run --rm api alembic upgrade head          # migrations
-docker compose run --rm api python -m app.infra.db.seed   # biblioteca de exercícios
-# http://localhost:8000/health  -> {"status":"ok"}
+docker compose up -d --build   # banco, API (migrations + seed na subida), worker e Adminer
+# http://localhost:8000/health  -> {"status":"ok","database":"ok","worker":{...}}
 # http://localhost:8000/docs    -> Swagger
 # http://localhost:8080         -> Adminer (servidor db, usuário/senha/banco: openlift)
 
 # Frontend
 cd app
 flutter pub get
-flutter test            # 130 testes
+flutter test
 flutter run -d chrome   # mais rápido, sem emulador
 ```
 
@@ -255,21 +260,21 @@ Prioridade: **M** = Must (obrigatório) · **S** = Should · **C** = Could · **
 
 ### Documentação
 
-Estrutura de `docs/` e situação em 18/10 (✅ em `main` · 🟡 em PR ou parcial · ⬜ não iniciado):
+Estrutura de `docs/` e situação em 22/11 (✅ em `main` · 🟡 parcial · ⬜ não iniciado):
 
 ```
 docs/
   CONTEXTO.md            este arquivo                                         ✅
-  adr/                   ADR-001 a ADR-010 (§5), formato Nygard                ✅ #54, 0003 em #22
-  requisitos/            RF / RNF / RN (§7) + matriz de rastreabilidade        ✅ #61
-  nips/                  mini-NIP do evento de treino + JSON Schema           ✅ #22
+  adr/                   ADR-0001 a ADR-0012 (§5), formato Nygard              ✅ (0012 proposto)
+  requisitos/            RF / RNF / RN (§7) + matriz de rastreabilidade        ✅ #61, #153
+  nips/                  mini-NIP do evento de treino + JSON Schema           ✅ #68
   arquitetura/           diagrama de contêineres, diagramas de sequência       ✅ #62
   ia/                    skills, agentes, registro de uso, avaliação crítica   ✅ #56
-  qa/                    critérios de aceite por sprint                        ✅ #55 (Sprint 2)
-  runbook/               como subir, como fazer replay, como operar o relay    ✅ #63 (replay e relay quando existirem)
-  lgpd.md                análise honesta de privacidade e limitações           ⬜ decisão do grupo
-  prompts/               prompts que funcionaram (anexo do relatório final)    🟡 PR #64
-  retros/                uma ata por sprint                                    🟡 PR #65 (ata da Sprint 1 a preencher)
+  qa/                    critérios de aceite por sprint                        ✅ Sprints 2, 3 e 4
+  runbook/               como subir, como fazer replay, como operar o relay    ✅ (relay quando existir)
+  lgpd.md                análise honesta de privacidade e limitações           🟡 fatos levantados; decisões do grupo
+  prompts/               prompts que funcionaram (anexo do relatório final)    ⬜ PR #64 não entrou
+  retros/                uma ata por sprint                                    🟡 Sprints 1–3 com fatos; reunião a preencher
 ```
 
 Cada item dessa lista é uma issue própria (ver issue #4, tracking), com sua própria branch e PR — não juntar múltiplos itens num único PR.
@@ -289,9 +294,11 @@ Dois itens desse conjunto são conteúdo original e não podem ser gerados por a
 
 Pendências novas de DevOps, levantadas na Sprint 1:
 
-9. ⬜ Servidor de staging rodando a imagem do GHCR (#16; onde hospedar ainda é a questão 5 da §9)
-10. ⬜ Migrations e seed automáticos no `docker compose up` — hoje são manuais (RNF-10)
-11. 🟡 Logs estruturados (RNF-14) e `/health` estendido — prontos nas branches `feat/structured-logging` e `feat/extended-health`, sem PR
+9. ✅ Servidor de staging no Railway, com deploy opcional (#99, #100)
+10. ✅ Migrations e seed automáticos no `docker compose up`, serviço `worker` e healthcheck da API (OPS-07, RNF-10)
+11. ✅ Logs estruturados em JSON com redação de chave (RNF-14, RNF-01) e `/health` com banco e worker (OPS-08)
+12. ⬜ Serviço `worker` no Railway (mesma imagem, `python -m app.worker`, `RUN_MIGRATIONS=false`): configuração manual no painel
+13. ⬜ Relay `strfry` próprio (OPS-04, RF-60), candidato a corte
 
 ### Agente de IA
 
@@ -323,16 +330,16 @@ Pendências novas de DevOps, levantadas na Sprint 1:
 
 ## 9. O que falta decidir
 
-| # | Questão | Recomendação | Quem decide | Situação (18/10) |
+| # | Questão | Recomendação | Quem decide | Situação (22/11) |
 |---|---|---|---|---|
-| 1 | Alocação das seis fronteiras entre cinco pessoas | PO acumula Dev NOSTR; front-end ganha o segundo par de mãos do DevOps nas sprints de tela | Time, na reunião | A confirmar na retro da Sprint 1 |
+| 1 | Alocação das seis fronteiras entre cinco pessoas | PO acumula Dev NOSTR; front-end ganha o segundo par de mãos do DevOps nas sprints de tela | Time, na reunião | A confirmar na reunião: as retros das Sprints 1–3 ainda não têm a parte da reunião |
 | 2 | Tags exatas do evento `kind 1301` — nome, tipo e ordem dos campos de exercício, série, carga, repetição, RPE, PR | Conferir o rascunho NIP-101e em `github.com/nostr-protocol/nips` (incluindo PRs abertos) e o que Groundwork e Amethyst realmente emitem, e só então fixar. **Primeira tarefa técnica da Sprint 1** | Dev NOSTR + PO | **Resolvida** em NOSTR-01 (#22): [ADR-0003](adr/0003-evento-de-treino-kind-1301.md) e [mini-NIP](nips/openlift-workout-event.md). Destrava S2-03, S2-04 e S2-06 |
 | 3 | Alvo primário: web ou Android | Web como demo primária (abre em qualquer celular na apresentação), APK como entrega adicional | Time | Coberta pelo ADR-0001 (web primária + APK) |
 | 4 | Gerência de estado no Flutter | Riverpod, já previsto no roadmap. Não gastar mais de 1 h nisso; ambos funcionam | Front-end | Resolvida na prática: Riverpod em uso desde o FE-01 (#39) |
-| 5 | Onde hospedar staging | Fly.io, Railway, Oracle Cloud Free Tier ou VPS da equipe | DevOps | Aberta — a imagem já é publicada no GHCR (#49); falta o servidor (#16) |
-| 6 | Relay próprio é obrigatório ou stretch? | Stretch da Sprint 4 — não bloqueia nada | Time | Aberta — o ADR-0007 já prevê o `strfry` a partir da Sprint 4 |
+| 5 | Onde hospedar staging | Fly.io, Railway, Oracle Cloud Free Tier ou VPS da equipe | DevOps | **Resolvida:** Railway, com staging e deploy opcional (#99, #100) |
+| 6 | Relay próprio é obrigatório ou stretch? | Stretch da Sprint 4 — não bloqueia nada | Time | Aberta, na prática stretch: o `strfry` não entrou na Sprint 4 e a Sprint 5 é congelamento |
 | 7 | Worker de sincronização: APScheduler ou Celery + Redis? | APScheduler, se o volume for o da turma. Celery + Redis é infra a mais para manter | Back-end | **Resolvida** em BE-07 (#106): [ADR-0011](adr/0011-worker-de-sincronizacao.md) — APScheduler em processo próprio, sem Redis |
-| 8 | Modo "relay da turma" com allowlist para a demo final | Sim — reduz drasticamente o risco de conteúdo inadequado aparecer na apresentação | Time | Aberta |
+| 8 | Modo "relay da turma" com allowlist para a demo final | Sim — reduz drasticamente o risco de conteúdo inadequado aparecer na apresentação | Time | Aberta; depende do relay próprio (questão 6). Também citada no [`lgpd.md`](lgpd.md) |
 
 ---
 

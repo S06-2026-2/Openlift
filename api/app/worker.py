@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 from app.services.nostr_sync_worker import run_sync_cycle
 
 JOB_ID = "nostr-sync"
@@ -35,8 +36,8 @@ def build_scheduler() -> BlockingScheduler:
 
 
 def main() -> None:  # pragma: no cover — bloqueia até o processo ser encerrado
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     settings = get_settings()
+    configure_logging(settings.log_level)
     logging.getLogger("openlift.worker").info(
         "Worker NOSTR iniciado: %d relay(s), ciclo a cada %d s",
         len(settings.nostr_relay_urls),

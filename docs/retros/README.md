@@ -5,8 +5,8 @@ Uma ata por sprint, escrita na reunião de fechamento. Serve para o time melhora
 | Sprint | Janela | Ata |
 |---|---|---|
 | 1 | 18/09 → 19/10 | [`sprint-1.md`](sprint-1.md) — fatos levantados; falta a parte da reunião |
-| 2 | 20/10 → 29/10 | — |
-| 3 | 30/10 → 09/11 | — |
+| 2 | 20/10 → 29/10 | [`sprint-2.md`](sprint-2.md) — fatos levantados; falta a parte da reunião |
+| 3 | 30/10 → 09/11 | [`sprint-3.md`](sprint-3.md) — fatos levantados; falta a parte da reunião |
 | 4 | 10/11 → 23/11 | — |
 | 5 | 24/11 → 03/12 | — |
 
