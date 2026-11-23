@@ -61,6 +61,29 @@ O app usa `http://localhost:8000/api/v1` por padrão. Para outra API:
 flutter run -d chrome --dart-define=API_URL=http://192.168.0.10:8000/api/v1
 ```
 
+### Android (celular via USB)
+
+Precisa do Android SDK (`flutter doctor` mostra o que falta).
+
+1. No celular, ative as *Opções do desenvolvedor* (Configurações → Sobre o telefone → toque 7× em "Número da versão") e ligue a *Depuração USB*.
+2. Conecte o cabo, aceite a permissão no celular e confira com `adb devices`.
+3. Faça o `localhost` do celular apontar para o seu PC e rode:
+
+```bash
+adb reverse tcp:8000 tcp:8000
+cd app
+flutter run
+```
+
+Sem cabo (Wi-Fi), aponte direto para o IP do PC: `flutter run --dart-define=API_URL=http://<ip-do-pc>:8000/api/v1`.
+
+### Windows (desktop)
+
+```bash
+cd app
+flutter run -d windows
+```
+
 ## 3. Testes (mesma bateria do CI)
 
 ```bash
