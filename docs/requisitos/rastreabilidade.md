@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09); RF-05, RF-33, RF-41, RF-42, RF-54, RN-03 e RNF-12 em 19/11/2026 (dashboard e rede social, ADR-0012). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,9 +8,9 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 16 | 5 | 10 | 9 |
+| RF | 40 | 19 | 7 | 7 | 7 |
 | RNF | 14 | 3 | 7 | 4 | 0 |
-| RN | 9 | 3 | 2 | 3 | 1 |
+| RN | 9 | 4 | 1 | 3 | 1 |
 
 Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md), e os da Sprint 3 em [`docs/qa/sprint-3.md`](../qa/sprint-3.md).
 
@@ -22,7 +22,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-02 | M | ✅ | FE-04 #83 | `app/lib/features/auth/data/nostr_identity_service.dart`, `app/lib/core/nostr/nip19.dart`, sincronização em `auth_controller.dart` | `app/test/features/auth/nostr_identity_service_test.dart`, `nostr_identity_sync_test.dart`, `app/test/core/nostr/nip19_test.dart` |
 | RF-03 | M | ✅ | BE-05 → #74 · FE-04 #83 | `POST /me/nostr-identity` (`api/app/api/v1/me.py`); o app registra o `npub` depois do login (`auth_repository.dart`) | `api/tests/test_nostr_identity.py`, `app/test/features/auth/nostr_identity_sync_test.dart` |
 | RF-04 | S | ✅ | FE-04 #83 | Perfil → Configurações avançadas (`import_identity_sheet.dart`) | `nostr_identity_service_test.dart`, `nostr_identity_sync_test.dart` (importação) |
-| RF-05 | S | 💤 | — | — | — |
+| RF-05 | S | ✅ | `feat/fe-perfil-social` · `feat/be-perfis` · `feat/be-midia` (ADR-0012) | Cadastro e edição do perfil: foto (`/media`, sem EXIF), nome de usuário único, nome e bio; salvo na API (`profiles`, NIP-05) e publicado como `kind 0` (`profile_service.dart`, `profile_form.dart`) | `app/test/features/social/profile_test.dart`, `api/tests/test_profiles.py`, `api/tests/test_media.py` |
 | RF-10 | M | ✅ | BE-03 #25 → #44 · FE-03 #30 → #41 | `api/app/infra/db/seed.py`, `api/app/api/v1/exercises.py`, `app/lib/features/workouts/presentation/widgets/exercise_picker_sheet.dart` | `api/tests/test_exercises.py`, `app/test/features/workouts/workout_screens_test.dart` |
 | RF-11 | S | 💤 | — | — | — |
 | RF-12 | M | ✅ | BE-04 #26 → #45 · FE-03 #30 → #41 · FE-09 #114 | `api/app/services/workout_service.py`, `api/app/api/v1/workouts.py`, `app/lib/features/workouts/presentation/workout_form_screen.dart`; RPE de 1 a 10 no app e na API (`workout_validators.dart`) | `api/tests/test_workouts.py`, `app/test/features/workouts/` ("RPE 0 é recusado") |
@@ -42,18 +42,18 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-30 | M | ✅ | NOSTR-04 #107 | Contact list `kind 3` (NIP-02) lida do relay e republicada inteira a cada mudança, assinada no aparelho (`app/lib/features/social/domain/contact_list.dart`, `data/follow_service.dart`); seguir e deixar de seguir na aba "Da rede" | `app/test/features/social/contact_list_test.dart`, `follow_flow_test.dart` |
 | RF-31 | M | ✅ | FE-07 #112 | Aba Social: treinos (`kind 1301`) de quem a pessoa segue, lidos dos relays com assinatura verificada, mais novos primeiro e paginados por `until` (`feed_controller.dart`, `feed_screen.dart`) | `app/test/features/social/feed_test.dart` |
 | RF-32 | M | ✅ | FE-08 #113 · BE-09 #123 · BE-10 #124 | Botão de curtir no card do feed publica um `kind 7` (NIP-25) assinado no aparelho (`like_service.dart`, `domain/like_model.dart`); contagem de `GET /social/likes` com atualização otimista (`likes_controller.dart`) | `app/test/features/social/like_test.dart`, `feed_test.dart` (grupo "curtir") |
-| RF-33 | S | 💤 | — | — | — |
+| RF-33 | S | 🟡 | `feat/fe-perfil-social` · `feat/fe-posts` (ADR-0012) | Página de perfil por `@nome`: foto, bio, nome verificado, Seguir, grade de fotos (`kind 20`) e treinos publicados (`profile_screens.dart`). Faltam as estatísticas públicas | `app/test/features/social/profile_test.dart`, `posts_test.dart` |
 | RF-34 | S | ⬜ S4 | — | Tabela `rankings` (BE-03 #44) | — |
 | RF-35 | C | 💤 | — | — | — |
 | RF-40 | M | ⬜ S4 | — | Tela Início com espaço reservado (FE-04 #51) | — |
-| RF-41 | M | ⬜ S4 | — | — | — |
-| RF-42 | M | ⬜ S4 | — | — | — |
+| RF-41 | M | ✅ | `feat/be-stats` · `feat/fe-dashboard` | Mapa de calor grupo muscular × semana (8 semanas) no Início, com o grupo mais treinado no topo (`volume_heatmap_widget.dart`) | `app/test/features/dashboard/dashboard_test.dart`, `api/tests/test_stats.py` |
+| RF-42 | M | 🟡 | `feat/be-stats` · `feat/fe-dashboard` | Volume semanal em barras (8 semanas) e frequência por grupo muscular (dias treinados em 28 dias) no Início (`weekly_volume_chart.dart`, `muscle_frequency_chart.dart`). Falta a visão mensal | `app/test/features/dashboard/dashboard_test.dart` |
 | RF-43 | S | ⬜ S4 | — | — | — |
 | RF-50 | M | ⬜ S3 | — | — | — |
 | RF-51 | M | 🟡 S2 | FE-06 #85 | O app verifica `id` e assinatura de todo evento lido antes de exibir (`network_workouts_service.dart`); falta a ingestão no backend (RF-50, S3) | `network_workouts_service_test.dart`, `network_feed_test.dart` (evento adulterado) |
 | RF-52 | M | ⬜ S3 | — | — | — |
 | RF-53 | M | ⬜ S3 | — | — | — |
-| RF-54 | M | ⬜ S4 | — | — | `api/tests/test_stats.py` (só TODOs) |
+| RF-54 | M | ✅ | `feat/be-stats` | `GET /stats/volume`, `/stats/muscle-groups` e `/stats/heatmap`, consulta direta ao Postgres sem cache (ADR-0011) (`stats_service.py`) | `api/tests/test_stats.py` |
 | RF-55 | M | ✅ | Sprint de fundação | `/health` (faz `SELECT 1` no banco) e `/version` em `api/app/main.py` | `api/tests/test_main.py` |
 | RF-56 | M | ✅ | BE-02 #24 → #43 · BE-03 #44 · BE-04 #45 | `summary`, `description`, exemplos e `error_responses()` em todas as rotas | `api/tests/test_auth.py` (OpenAPI) |
 | RF-60 | S | ⬜ S4 | — | — | — |
@@ -74,7 +74,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RNF-09 | ✅ | OPS-01 #31 | Branch protection: PR com 1 aprovação e checks obrigatórios | — |
 | RNF-10 | 🟡 | — | `docker compose up` sobe banco, API e Adminer | Migrations e seed ainda são manuais |
 | RNF-11 | ⬜ S2 | S2-08 (a criar) | — | Captura do evento num cliente de terceiros |
-| RNF-12 | 🟡 S2 | ADR-0009 · FE-05 #84 | Nenhuma coleta de geolocalização no app; consentimento explícito na 1ª publicação, guardado por conta (`publication_widgets.dart`) | `docs/lgpd.md` |
+| RNF-12 | 🟡 S2 | ADR-0009 · FE-05 #84 · ADR-0012 | Nenhuma coleta de geolocalização no app; consentimento explícito na 1ª publicação, guardado por conta (`publication_widgets.dart`); fotos recodificadas sem EXIF/GPS na API (`media_service.py`) e aviso de que o perfil e as fotos são públicos | `docs/lgpd.md`, `api/tests/test_media.py` ("remove EXIF e GPS") |
 | RNF-13 | 🟡 | FE-03 #30 → #41 | "Repetir última" copia a série em 1 toque (teste de widget) | Teste com 3 pessoas fora da equipe |
 | RNF-14 | ⬜ | — | Branch `feat/structured-logging` em andamento, sem PR | Logs JSON correlacionáveis por `event_id` |
 
@@ -84,7 +84,7 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 |---|---|---|---|---|
 | RN-01 | ✅ | FE-03 #41 · BE-S2-03 #90 · FE-05 #84 | O app não salva nem publica treino sem série; o backend recusa a publicação (422) | — |
 | RN-02 | 💤 | — | — | Depende da detecção de PR (RF-17) |
-| RN-03 | 🟡 | FE-03 #30 → #41 | Volume do histórico ignora aquecimento (`workout_model.dart`, teste "sem aquecimento") | Mesma regra nos endpoints de estatística (RF-54) |
+| RN-03 | ✅ | FE-03 #30 → #41 · `feat/be-stats` | Volume do histórico e dos endpoints de estatística ignora aquecimento (`workout_model.dart`, `stats_service.py`) | `api/tests/test_stats.py` ("sem aquecimento"), testes do histórico |
 | RN-04 | ⬜ S4 | — | — | Ranking por semana ISO |
 | RN-05 | ⬜ S4 | — | — | Descartar `created_at` > 15 min no futuro |
 | RN-06 | 🟡 S3 | BE-03 #25 → #44 | Constraint única `uq_likes_event_liker` (evento + pubkey) | Projeção de likes (RF-52) |
