@@ -87,7 +87,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | PATCH / DELETE | `/workouts/{id}/sets/{set_id}` | Edita ou remove uma série |
 | POST | `/workouts/{id}/publication` | O app avisa que publicou o `kind 1301` (`event_id`, `pubkey`, `d_tag`): treino vira `published`. Idempotente por `event_id`; `pubkey` diferente do `npub` registrado → 403; sem série → 422 (RN-01); republicar após edição = `event_id` novo com o mesmo `d_tag` (RN-08) |
 | POST | `/workouts/{id}/publication-failure` | O app avisa que nenhum relay aceitou (`event_id`, `pubkey`): treino vira `failed`. Idempotente |
-| GET | `/stats/volume` | Volume semanal (RN-03, sem aquecimento) e treinos por semana ISO (`weeks` 1–52, padrão 12; `date_to`). Semanas sem treino vêm zeradas |
+| GET | `/stats/volume` | Volume (RN-03, sem aquecimento) e treinos por semana ISO ou mês (`group_by=week|month`, `periods` 1–52, padrão 12; `date_to`), mais `workouts_this_month` e `streak_days` (dias seguidos com treino). Períodos sem treino vêm zerados |
 | GET | `/stats/muscle-groups` | Volume, séries e dias treinados por grupo muscular (`date_from`, `date_to`; padrão últimos 28 dias). Todos os grupos, do mais treinado ao menos |
 | GET | `/stats/heatmap` | Matriz data × grupo × volume (`date_from`, `date_to`; padrão 8 semanas; até 366 dias) com a lista de grupos. Período invertido → 422 `invalid_date_range`; longo demais → 422 `date_range_too_long` |
 | GET | `/profiles/availability` | `?username=`: `{username, available}` (nome do próprio usuário conta como livre; fora do formato → 422 `invalid_username`) |

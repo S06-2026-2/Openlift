@@ -52,18 +52,21 @@ def _workout(client: TestClient, headers: dict[str, str], day: str, *sets: dict)
 
 def test_volume_sem_treinos_vem_zerado(client: TestClient, auth_headers: dict[str, str]) -> None:
     response = client.get(
-        f"{STATS}/volume", params={"weeks": 3, "date_to": "2026-11-19"}, headers=auth_headers
+        f"{STATS}/volume", params={"periods": 3, "date_to": "2026-11-19"}, headers=auth_headers
     )
 
     assert response.status_code == 200
     assert response.json() == {
-        "weeks": [
-            {"week_start": "2026-11-02", "volume": 0.0, "workouts": 0},
-            {"week_start": "2026-11-09", "volume": 0.0, "workouts": 0},
-            {"week_start": "2026-11-16", "volume": 0.0, "workouts": 0},
+        "group_by": "week",
+        "periods": [
+            {"period_start": "2026-11-02", "volume": 0.0, "workouts": 0},
+            {"period_start": "2026-11-09", "volume": 0.0, "workouts": 0},
+            {"period_start": "2026-11-16", "volume": 0.0, "workouts": 0},
         ],
         "total_volume": 0.0,
         "total_workouts": 0,
+        "workouts_this_month": 0,
+        "streak_days": 0,
     }
 
 
@@ -80,12 +83,12 @@ def test_volume_soma_por_semana_iso_sem_aquecimento(
     _workout(client, auth_headers, "2026-11-08", _set(bench, 10, 100))
 
     body = client.get(
-        f"{STATS}/volume", params={"weeks": 2, "date_to": "2026-11-19"}, headers=auth_headers
+        f"{STATS}/volume", params={"periods": 2, "date_to": "2026-11-19"}, headers=auth_headers
     ).json()
 
-    assert body["weeks"] == [
-        {"week_start": "2026-11-09", "volume": 1100.0, "workouts": 2},
-        {"week_start": "2026-11-16", "volume": 660.0, "workouts": 1},
+    assert body["periods"] == [
+        {"period_start": "2026-11-09", "volume": 1100.0, "workouts": 2},
+        {"period_start": "2026-11-16", "volume": 660.0, "workouts": 1},
     ]
     assert body["total_volume"] == 1760.0
     assert body["total_workouts"] == 3
@@ -97,10 +100,10 @@ def test_volume_conta_treino_so_de_aquecimento_mas_sem_volume(
     _workout(client, auth_headers, "2026-11-17", _set(library["Supino reto"], 10, 40, "warmup"))
 
     body = client.get(
-        f"{STATS}/volume", params={"weeks": 1, "date_to": "2026-11-19"}, headers=auth_headers
+        f"{STATS}/volume", params={"periods": 1, "date_to": "2026-11-19"}, headers=auth_headers
     ).json()
 
-    assert body["weeks"] == [{"week_start": "2026-11-16", "volume": 0.0, "workouts": 1}]
+    assert body["periods"] == [{"period_start": "2026-11-16", "volume": 0.0, "workouts": 1}]
 
 
 def test_volume_nao_mistura_usuarios(
@@ -112,7 +115,7 @@ def test_volume_nao_mistura_usuarios(
     _workout(client, other_headers, "2026-11-18", _set(library["Supino reto"], 10, 100))
 
     body = client.get(
-        f"{STATS}/volume", params={"weeks": 1, "date_to": "2026-11-19"}, headers=auth_headers
+        f"{STATS}/volume", params={"periods": 1, "date_to": "2026-11-19"}, headers=auth_headers
     ).json()
 
     assert body["total_volume"] == 0.0
@@ -123,16 +126,97 @@ def test_volume_nao_mistura_usuarios(
 def test_volume_limita_semanas(
     client: TestClient, auth_headers: dict[str, str], weeks: int
 ) -> None:
-    response = client.get(f"{STATS}/volume", params={"weeks": weeks}, headers=auth_headers)
+    response = client.get(f"{STATS}/volume", params={"periods": weeks}, headers=auth_headers)
 
     assert response.status_code == 422
     assert response.json()["code"] == "validation_error"
 
 
-def test_volume_padrao_tem_12_semanas(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_volume_padrao_tem_12_periodos(client: TestClient, auth_headers: dict[str, str]) -> None:
     body = client.get(f"{STATS}/volume", headers=auth_headers).json()
 
-    assert len(body["weeks"]) == 12
+    assert len(body["periods"]) == 12
+
+
+def test_volume_por_mes(
+    client: TestClient, auth_headers: dict[str, str], library: dict[str, int]
+) -> None:
+    bench = library["Supino reto"]
+    _workout(client, auth_headers, "2026-09-30", _set(bench, 10, 50))
+    _workout(client, auth_headers, "2026-10-01", _set(bench, 10, 60))
+    _workout(client, auth_headers, "2026-11-19", _set(bench, 10, 70), _set(bench, 5, 70, "warmup"))
+
+    body = client.get(
+        f"{STATS}/volume",
+        params={"group_by": "month", "periods": 3, "date_to": "2026-11-19"},
+        headers=auth_headers,
+    ).json()
+
+    assert body["group_by"] == "month"
+    assert body["periods"] == [
+        {"period_start": "2026-09-01", "volume": 500.0, "workouts": 1},
+        {"period_start": "2026-10-01", "volume": 600.0, "workouts": 1},
+        {"period_start": "2026-11-01", "volume": 700.0, "workouts": 1},
+    ]
+    assert body["workouts_this_month"] == 1
+
+
+def test_volume_por_mes_atravessa_o_ano(client: TestClient, auth_headers: dict[str, str]) -> None:
+    body = client.get(
+        f"{STATS}/volume",
+        params={"group_by": "month", "periods": 3, "date_to": "2027-01-10"},
+        headers=auth_headers,
+    ).json()
+
+    assert [p["period_start"] for p in body["periods"]] == [
+        "2026-11-01",
+        "2026-12-01",
+        "2027-01-01",
+    ]
+
+
+def test_streak_atravessa_virada_de_mes_e_semana(
+    client: TestClient, auth_headers: dict[str, str], library: dict[str, int]
+) -> None:
+    bench = library["Supino reto"]
+    # 30/11 (segunda) → 03/12: quatro dias seguidos, passando de mês.
+    for day in ("2026-11-27", "2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03"):
+        _workout(client, auth_headers, day, _set(bench, 10, 50))
+
+    def streak(date_to: str) -> int:
+        return client.get(
+            f"{STATS}/volume", params={"date_to": date_to}, headers=auth_headers
+        ).json()["streak_days"]
+
+    assert streak("2026-12-03") == 4
+    # Ainda sem treino hoje: a sequência de ontem continua valendo.
+    assert streak("2026-12-04") == 4
+    # Dois dias sem treino: acabou.
+    assert streak("2026-12-05") == 0
+    # 29/11 (domingo) sem treino quebra a sequência que vinha de 27/11.
+    assert streak("2026-11-30") == 1
+
+
+def test_treinos_no_mes_contam_ate_date_to(
+    client: TestClient, auth_headers: dict[str, str], library: dict[str, int]
+) -> None:
+    bench = library["Supino reto"]
+    for day in ("2026-10-31", "2026-11-01", "2026-11-10", "2026-11-25"):
+        _workout(client, auth_headers, day, _set(bench, 10, 50))
+
+    body = client.get(
+        f"{STATS}/volume", params={"date_to": "2026-11-19"}, headers=auth_headers
+    ).json()
+
+    assert body["workouts_this_month"] == 2
+
+
+def test_volume_recusa_agrupamento_desconhecido(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    response = client.get(f"{STATS}/volume", params={"group_by": "year"}, headers=auth_headers)
+
+    assert response.status_code == 422
 
 
 # ---------------------------------------------------------------------------

@@ -4,42 +4,56 @@ Volume segue a RN-03: Σ (carga × repetições), sem séries de aquecimento.
 """
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+GroupBy = Literal["week", "month"]
 
-class WeekVolumeOut(BaseModel):
-    """Volume de uma semana ISO (segunda a domingo)."""
 
-    week_start: date = Field(description="Segunda-feira da semana")
+class PeriodVolumeOut(BaseModel):
+    """Volume de uma semana ISO (segunda a domingo) ou de um mês."""
+
+    period_start: date = Field(description="Segunda-feira da semana ou dia 1 do mês")
     volume: float = Field(ge=0, description="Σ carga × repetições (kg), sem aquecimento")
-    workouts: int = Field(ge=0, description="Treinos registrados na semana")
+    workouts: int = Field(ge=0, description="Treinos registrados no período")
 
 
 class VolumeStatsOut(BaseModel):
-    """Volume semanal das últimas N semanas, da mais antiga para a mais nova.
+    """Volume das últimas N semanas ou meses, do mais antigo para o mais novo.
 
-    Semanas sem treino aparecem com zero, para o gráfico não pular semanas.
+    Períodos sem treino aparecem com zero, para o gráfico não pular nenhum.
+    Os campos de resumo contam até `date_to`.
     """
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
-                    "weeks": [
-                        {"week_start": "2026-11-09", "volume": 5400.0, "workouts": 3},
-                        {"week_start": "2026-11-16", "volume": 2100.5, "workouts": 1},
+                    "group_by": "week",
+                    "periods": [
+                        {"period_start": "2026-11-09", "volume": 5400.0, "workouts": 3},
+                        {"period_start": "2026-11-16", "volume": 2100.5, "workouts": 1},
                     ],
                     "total_volume": 7500.5,
                     "total_workouts": 4,
+                    "workouts_this_month": 6,
+                    "streak_days": 2,
                 }
             ]
         }
     )
 
-    weeks: list[WeekVolumeOut]
+    group_by: GroupBy
+    periods: list[PeriodVolumeOut]
     total_volume: float = Field(ge=0)
     total_workouts: int = Field(ge=0)
+    workouts_this_month: int = Field(ge=0, description="Treinos do mês de `date_to`, até ele")
+    streak_days: int = Field(
+        ge=0,
+        description="Dias seguidos com treino terminando em `date_to` (ou na véspera, se ainda "
+        "não treinou hoje)",
+    )
 
 
 class MuscleGroupStatsOut(BaseModel):
