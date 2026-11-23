@@ -1,4 +1,4 @@
-// Mapa de calor de volume (RF-41): grupo muscular × semana, cor por
+// Mapa de calor de volume (RF-41): grupo muscular × semana ou mês, cor por
 // intensidade de volume. O grupo mais treinado fica no topo, destacado.
 
 import 'package:flutter/material.dart';
@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../domain/stats_model.dart';
+import 'widgets/volume_chart.dart' show periodLabel;
 
 /// Cor da célula: vazio sem volume; senão um dos 4 níveis de [AppTheme.heatScale]
 /// proporcional ao maior volume do mapa.
@@ -20,11 +21,15 @@ class VolumeHeatmap extends StatelessWidget {
   const VolumeHeatmap({
     super.key,
     required this.rows,
-    required this.weekStarts,
+    required this.columns,
+    required this.scale,
   });
 
   final List<HeatmapRow> rows;
-  final List<DateTime> weekStarts;
+
+  /// Início de cada coluna (semana ou mês).
+  final List<DateTime> columns;
+  final StatsScale scale;
 
   static const double _cell = 22;
   static const double _gap = 4;
@@ -36,14 +41,11 @@ class VolumeHeatmap extends StatelessWidget {
     final empty = theme.colorScheme.surfaceContainerHighest;
     final max = rows.fold<double>(
       0,
-      (m, row) => row.weekly.fold(m, (n, v) => v > n ? v : n),
+      (m, row) => row.values.fold(m, (n, v) => v > n ? v : n),
     );
     final topId = rows.isNotEmpty && rows.first.total > 0
         ? rows.first.muscleGroupId
         : null;
-
-    String weekLabel(DateTime d) =>
-        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,12 +89,13 @@ class VolumeHeatmap extends StatelessWidget {
                           ],
                         ),
                       ),
-                      for (var i = 0; i < row.weekly.length; i++) ...[
+                      for (var i = 0; i < row.values.length; i++) ...[
                         if (i > 0) const SizedBox(width: _gap),
                         Tooltip(
-                          message: '${row.name} · semana de '
-                              '${weekLabel(weekStarts[i])}: '
-                              '${formatKg(row.weekly[i])}',
+                          message: '${row.name} · '
+                              '${scale == StatsScale.month ? 'mês de' : 'semana de'} '
+                              '${periodLabel(columns[i], scale)}: '
+                              '${formatKg(row.values[i])}',
                           child: Container(
                             key: ValueKey(
                               'heat-${row.muscleGroupId}-$i',
@@ -100,7 +103,7 @@ class VolumeHeatmap extends StatelessWidget {
                             width: _cell,
                             height: _cell,
                             decoration: BoxDecoration(
-                              color: heatColor(row.weekly[i], max, empty),
+                              color: heatColor(row.values[i], max, empty),
                               borderRadius: BorderRadius.circular(5),
                             ),
                           ),
@@ -112,13 +115,18 @@ class VolumeHeatmap extends StatelessWidget {
               Row(
                 children: [
                   const SizedBox(width: _labelWidth),
-                  for (var i = 0; i < weekStarts.length; i++) ...[
+                  for (var i = 0; i < columns.length; i++) ...[
                     if (i > 0) const SizedBox(width: _gap),
                     SizedBox(
                       width: _cell,
-                      child: i.isEven || i == weekStarts.length - 1
+                      child: scale == StatsScale.month ||
+                              i.isEven ||
+                              i == columns.length - 1
                           ? Text(
-                              weekLabel(weekStarts[i]).substring(0, 2),
+                              scale == StatsScale.month
+                                  ? periodLabel(columns[i], scale)
+                                  : periodLabel(columns[i], scale)
+                                      .substring(0, 2),
                               textAlign: TextAlign.center,
                               style: theme.textTheme.labelSmall
                                   ?.copyWith(letterSpacing: 0, fontSize: 10),

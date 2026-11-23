@@ -33,6 +33,17 @@ docker compose run --rm api python -m app.worker
 
 Processo separado da API (ADR-0011: APScheduler, sem Redis). A cada `NOSTR_SYNC_INTERVAL_SECONDS` ele lê dos relays de `NOSTR_RELAYS` os likes (`kind 7`, NIP-25) sobre os treinos publicados e projeta na tabela `likes`. Só entra evento com assinatura verificada (RF-51); um like por pessoa por treino (RN-06); `content` `"-"` (dislike) é ignorado. A tabela é cache: apagar e rodar o worker de novo reconstrói a mesma contagem (ADR-0004). O serviço `worker` do `docker compose` entra no OPS-07.
 
+## Replay das curtidas (RF-53)
+
+Apaga o cache `likes` e reconstrói a partir dos `kind 7` nos relays, com a mesma projeção do worker. Lê os relays antes de apagar; se nenhum responder, não apaga nada.
+
+```bash
+docker compose run --rm api python -m app.cli replay --dry-run  # simulação
+docker compose run --rm api python -m app.cli replay
+```
+
+Passo a passo e roteiro da demo em [`docs/runbook/replay.md`](../docs/runbook/replay.md).
+
 ## Migrations
 
 ```bash
@@ -67,6 +78,7 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 | `PUBLIC_BASE_URL` | URL pública da API (padrão `http://localhost:8000`): domínio do NIP-05 (`usuario@host`) e base das URLs de foto (ADR-0012) |
 | `MEDIA_DIR` | Pasta das fotos enviadas (padrão `media`, ignorada pelo git). **No staging, monte um volume persistente aqui**, senão as fotos somem a cada deploy (ADR-0012) |
+| `RATE_LIMIT_AUTH` / `RATE_LIMIT_SOCIAL` / `RATE_LIMIT_ENABLED` | Rate limiting por IP (RNF-03): `/auth` (padrão `10/minute`) e `/social`, `/profiles`, `/media` (padrão `120/minute`). Acima disso, 429 `rate_limited` com `Retry-After`. O IP vem do primeiro `X-Forwarded-For` (API atrás de proxy no staging) |
 
 ## Rotas (`/api/v1`)
 
@@ -87,7 +99,7 @@ Tudo exige `Authorization: Bearer <access_token>`, exceto `/auth/*`, `/health` e
 | PATCH / DELETE | `/workouts/{id}/sets/{set_id}` | Edita ou remove uma série |
 | POST | `/workouts/{id}/publication` | O app avisa que publicou o `kind 1301` (`event_id`, `pubkey`, `d_tag`): treino vira `published`. Idempotente por `event_id`; `pubkey` diferente do `npub` registrado → 403; sem série → 422 (RN-01); republicar após edição = `event_id` novo com o mesmo `d_tag` (RN-08) |
 | POST | `/workouts/{id}/publication-failure` | O app avisa que nenhum relay aceitou (`event_id`, `pubkey`): treino vira `failed`. Idempotente |
-| GET | `/stats/volume` | Volume semanal (RN-03, sem aquecimento) e treinos por semana ISO (`weeks` 1–52, padrão 12; `date_to`). Semanas sem treino vêm zeradas |
+| GET | `/stats/volume` | Volume (RN-03, sem aquecimento) e treinos por semana ISO ou mês (`group_by=week|month`, `periods` 1–52, padrão 12; `date_to`), mais `workouts_this_month` e `streak_days` (dias seguidos com treino). Períodos sem treino vêm zerados |
 | GET | `/stats/muscle-groups` | Volume, séries e dias treinados por grupo muscular (`date_from`, `date_to`; padrão últimos 28 dias). Todos os grupos, do mais treinado ao menos |
 | GET | `/stats/heatmap` | Matriz data × grupo × volume (`date_from`, `date_to`; padrão 8 semanas; até 366 dias) com a lista de grupos. Período invertido → 422 `invalid_date_range`; longo demais → 422 `date_range_too_long` |
 | GET | `/profiles/availability` | `?username=`: `{username, available}` (nome do próprio usuário conta como livre; fora do formato → 422 `invalid_username`) |

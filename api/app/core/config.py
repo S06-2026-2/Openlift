@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     # ADR-0012 — onde as fotos ficam em disco (no staging, um volume persistente)
     media_dir: str = "media"
 
+    # OPS-05 — rate limiting (RNF-03): texto no formato da biblioteca `limits`
+    rate_limit_enabled: bool = True
+    rate_limit_auth: str = "10/minute"
+    rate_limit_social: str = "120/minute"
+
     @property
     def nostr_relay_urls(self) -> list[str]:
         """`NOSTR_RELAYS` (separados por vírgula) → lista sem vazios nem repetidos."""

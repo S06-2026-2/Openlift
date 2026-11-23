@@ -1,7 +1,8 @@
 // Estatísticas do dashboard (RF-41, RF-42) lidas da API (RF-54).
 //
 // Contrato, base /api/v1:
-//   GET /stats/volume?weeks&date_to             -> {weeks, total_volume, total_workouts}
+//   GET /stats/volume?group_by&periods&date_to  -> {group_by, periods, total_volume, total_workouts,
+//                                                   workouts_this_month, streak_days}
 //   GET /stats/muscle-groups?date_from&date_to  -> [{muscle_group_id, muscle_group, volume, sets, sessions}]
 //   GET /stats/heatmap?date_from&date_to        -> {date_from, date_to, muscle_groups, cells}
 //
@@ -25,11 +26,19 @@ class StatsRepository {
     422: 'Período inválido para as estatísticas.',
   };
 
-  Future<VolumeStats> getVolume({required DateTime until, int weeks = 8}) {
+  Future<VolumeStats> getVolume({
+    required DateTime until,
+    StatsScale scale = StatsScale.week,
+    int periods = 8,
+  }) {
     return _guard(() async {
       final response = await _api.dio.get<dynamic>(
         '/stats/volume',
-        queryParameters: {'weeks': weeks, 'date_to': toApiDate(until)},
+        queryParameters: {
+          'group_by': scale == StatsScale.month ? 'month' : 'week',
+          'periods': periods,
+          'date_to': toApiDate(until),
+        },
       );
       return VolumeStats.fromJson(response.data);
     });

@@ -1,5 +1,6 @@
-// Modelos do dashboard (RF-41, RF-42): volume semanal, volume e frequência
-// por grupo muscular e a matriz do mapa de calor. Contrato de /stats (RF-54).
+// Modelos do dashboard (RF-40 a RF-43): volume semanal e mensal, treinos no
+// mês, sequência (streak), volume e frequência por grupo muscular e a matriz
+// do mapa de calor. Contrato de /stats (RF-54).
 //
 // Volume = Σ carga × repetições sem aquecimento (RN-03), calculado na API.
 
@@ -21,53 +22,78 @@ DateTime _date(Object? value) =>
 int _int(Object? value) =>
     asInt(value) ?? (throw const FormatException('Número esperado'));
 
-/// Volume de uma semana ISO (começa na segunda).
-class WeekVolume {
-  const WeekVolume({
-    required this.weekStart,
+/// Agrupamento do volume e do mapa de calor: semana ISO ou mês.
+enum StatsScale { week, month }
+
+/// Volume de uma semana ISO (começa na segunda) ou de um mês.
+class PeriodVolume {
+  const PeriodVolume({
+    required this.periodStart,
     required this.volume,
     required this.workouts,
   });
 
-  factory WeekVolume.fromJson(Map<String, dynamic> json) => WeekVolume(
-        weekStart: _date(json['week_start']),
+  factory PeriodVolume.fromJson(Map<String, dynamic> json) => PeriodVolume(
+        periodStart: _date(json['period_start']),
         volume: asDouble(json['volume']) ?? 0,
         workouts: asInt(json['workouts']) ?? 0,
       );
 
-  final DateTime weekStart;
+  final DateTime periodStart;
   final double volume;
   final int workouts;
 }
 
 class VolumeStats {
   const VolumeStats({
-    required this.weeks,
+    required this.scale,
+    required this.periods,
     required this.totalVolume,
     required this.totalWorkouts,
+    this.workoutsThisMonth = 0,
+    this.streakDays = 0,
   });
+
+  /// Sem treino nenhum (usado como valor inicial e nos testes).
+  const VolumeStats.empty([this.scale = StatsScale.week])
+      : periods = const [],
+        totalVolume = 0,
+        totalWorkouts = 0,
+        workoutsThisMonth = 0,
+        streakDays = 0;
 
   factory VolumeStats.fromJson(Object? data) {
     final json = _map(data);
     return VolumeStats(
-      weeks: [
-        for (final item in _list(json['weeks']))
-          WeekVolume.fromJson(_map(item)),
+      scale: json['group_by'] == 'month' ? StatsScale.month : StatsScale.week,
+      periods: [
+        for (final item in _list(json['periods']))
+          PeriodVolume.fromJson(_map(item)),
       ],
       totalVolume: asDouble(json['total_volume']) ?? 0,
       totalWorkouts: asInt(json['total_workouts']) ?? 0,
+      workoutsThisMonth: asInt(json['workouts_this_month']) ?? 0,
+      streakDays: asInt(json['streak_days']) ?? 0,
     );
   }
 
-  /// Semanas da mais antiga para a mais nova.
-  final List<WeekVolume> weeks;
+  final StatsScale scale;
+
+  /// Do período mais antigo para o mais novo.
+  final List<PeriodVolume> periods;
   final double totalVolume;
   final int totalWorkouts;
 
-  WeekVolume? get currentWeek => weeks.isEmpty ? null : weeks.last;
+  /// Treinos do mês corrente, até hoje.
+  final int workoutsThisMonth;
 
-  WeekVolume? get previousWeek =>
-      weeks.length < 2 ? null : weeks[weeks.length - 2];
+  /// Dias seguidos com treino (streak).
+  final int streakDays;
+
+  PeriodVolume? get current => periods.isEmpty ? null : periods.last;
+
+  PeriodVolume? get previous =>
+      periods.length < 2 ? null : periods[periods.length - 2];
 }
 
 /// Volume e frequência de um grupo muscular no período.
@@ -116,19 +142,20 @@ class HeatmapCell {
   final double volume;
 }
 
-/// Uma linha do mapa de calor: o volume do grupo em cada semana.
+/// Uma linha do mapa de calor: o volume do grupo em cada coluna (semana ou
+/// mês).
 class HeatmapRow {
   const HeatmapRow({
     required this.muscleGroupId,
     required this.name,
-    required this.weekly,
+    required this.values,
   });
 
   final int muscleGroupId;
   final String name;
-  final List<double> weekly;
+  final List<double> values;
 
-  double get total => weekly.fold(0, (sum, v) => sum + v);
+  double get total => values.fold(0, (sum, v) => sum + v);
 }
 
 class HeatmapData {
@@ -162,30 +189,36 @@ class HeatmapData {
   final Map<int, String> groups;
   final List<HeatmapCell> cells;
 
-  /// Segundas-feiras das semanas cobertas pelo período, em ordem.
-  List<DateTime> get weekStarts {
-    final first = weekStartOf(from);
-    final last = weekStartOf(to);
-    return [
-      for (var week = first;
-          !week.isAfter(last);
-          week = DateTime(week.year, week.month, week.day + 7))
-        week,
-    ];
+  /// Início de cada coluna: as últimas [count] semanas (segundas-feiras) ou
+  /// meses (dia 1) até [to], sem começar antes de [from].
+  List<DateTime> columns(StatsScale scale, int count) {
+    final last = scale == StatsScale.week ? weekStartOf(to) : monthStartOf(to);
+    final first =
+        scale == StatsScale.week ? weekStartOf(from) : monthStartOf(from);
+    final starts = <DateTime>[];
+    for (var i = count - 1; i >= 0; i--) {
+      final start = scale == StatsScale.week
+          ? DateTime(last.year, last.month, last.day - 7 * i)
+          : DateTime(last.year, last.month - i);
+      if (!start.isBefore(first)) starts.add(start);
+    }
+    return starts;
   }
 
-  /// Linhas grupo × semana, do grupo mais treinado para o menos (empate em
+  /// Linhas grupo × coluna, do grupo mais treinado para o menos (empate em
   /// ordem alfabética). Grupos sem volume no período ficam no fim.
-  List<HeatmapRow> weeklyRows() {
-    final weeks = weekStarts;
+  List<HeatmapRow> rows(StatsScale scale, List<DateTime> columns) {
     final index = {
-      for (var i = 0; i < weeks.length; i++) weeks[i]: i,
+      for (var i = 0; i < columns.length; i++) columns[i]: i,
     };
     final volumes = {
-      for (final id in groups.keys) id: List<double>.filled(weeks.length, 0),
+      for (final id in groups.keys) id: List<double>.filled(columns.length, 0),
     };
     for (final cell in cells) {
-      final column = index[weekStartOf(cell.date)];
+      final key = scale == StatsScale.week
+          ? weekStartOf(cell.date)
+          : monthStartOf(cell.date);
+      final column = index[key];
       final row = volumes[cell.muscleGroupId];
       if (column == null || row == null) continue;
       row[column] += cell.volume;
@@ -195,7 +228,7 @@ class HeatmapData {
         HeatmapRow(
           muscleGroupId: entry.key,
           name: groups[entry.key]!,
-          weekly: entry.value,
+          values: entry.value,
         ),
     ];
     rows.sort((a, b) {
@@ -210,21 +243,32 @@ class HeatmapData {
 DateTime weekStartOf(DateTime day) =>
     DateTime(day.year, day.month, day.day - (day.weekday - DateTime.monday));
 
+/// Dia 1 do mês de [day].
+DateTime monthStartOf(DateTime day) => DateTime(day.year, day.month);
+
 /// Tudo o que o dashboard mostra, carregado de uma vez.
 class DashboardData {
   const DashboardData({
-    required this.volume,
+    required this.weekly,
+    required this.monthly,
     required this.muscleGroups,
     required this.heatmap,
   });
 
-  final VolumeStats volume;
+  /// Volume por semana, com treinos no mês e sequência.
+  final VolumeStats weekly;
+
+  /// Volume por mês.
+  final VolumeStats monthly;
 
   /// Do mais treinado para o menos.
   final List<MuscleGroupStats> muscleGroups;
   final HeatmapData heatmap;
 
-  bool get isEmpty => volume.totalWorkouts == 0 && heatmap.cells.isEmpty;
+  bool get isEmpty =>
+      weekly.totalWorkouts == 0 &&
+      monthly.totalWorkouts == 0 &&
+      heatmap.cells.isEmpty;
 
   /// Grupo com mais volume no período, ou `null` sem treino.
   MuscleGroupStats? get topMuscleGroup {

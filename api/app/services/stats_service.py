@@ -25,15 +25,18 @@ from app.domain.models.set import WorkoutSet
 from app.domain.models.user import User
 from app.domain.models.workout import Workout
 from app.domain.schemas.stats import (
+    GroupBy,
     HeatmapCellOut,
     HeatmapOut,
     MuscleGroupRef,
     MuscleGroupStatsOut,
+    PeriodVolumeOut,
     VolumeStatsOut,
-    WeekVolumeOut,
 )
 
 MAX_RANGE_DAYS = 366
+# Até onde a sequência (streak) olha para trás.
+MAX_STREAK_DAYS = 366
 
 
 @dataclass(frozen=True)
@@ -48,6 +51,40 @@ class _DailyGroup:
 def week_start(day: date) -> date:
     """Segunda-feira da semana ISO de `day`."""
     return day - timedelta(days=day.weekday())
+
+
+def month_start(day: date) -> date:
+    return day.replace(day=1)
+
+
+def _shift_months(day: date, months: int) -> date:
+    """Dia 1 do mês `months` meses antes (negativo) ou depois de `day`."""
+    index = day.year * 12 + (day.month - 1) + months
+    return date(index // 12, index % 12 + 1, 1)
+
+
+def period_starts(group_by: GroupBy, periods: int, date_to: date) -> list[date]:
+    """Início de cada período, do mais antigo ao que contém `date_to`."""
+    if group_by == "month":
+        last = month_start(date_to)
+        return [_shift_months(last, i - periods + 1) for i in range(periods)]
+    last = week_start(date_to)
+    return [last - timedelta(weeks=periods - 1 - i) for i in range(periods)]
+
+
+def _period_of(group_by: GroupBy, day: date) -> date:
+    return month_start(day) if group_by == "month" else week_start(day)
+
+
+def streak_days(days_with_workout: set[date], date_to: date) -> int:
+    """Dias seguidos com treino até `date_to`. Se ainda não treinou em
+    `date_to`, a sequência de ontem continua valendo (o dia não acabou)."""
+    day = date_to if date_to in days_with_workout else date_to - timedelta(days=1)
+    streak = 0
+    while day in days_with_workout and streak < MAX_STREAK_DAYS:
+        streak += 1
+        day -= timedelta(days=1)
+    return streak
 
 
 def check_range(date_from: date, date_to: date) -> None:
@@ -92,33 +129,52 @@ def _as_float(value: Decimal) -> float:
     return float(round(value, 2))
 
 
-def volume_by_week(db: Session, user: User, weeks: int, date_to: date) -> VolumeStatsOut:
-    first_week = week_start(date_to) - timedelta(weeks=weeks - 1)
+def _workouts_per_day(db: Session, user: User, date_from: date, date_to: date) -> dict[date, int]:
+    return {
+        day: count
+        for day, count in db.execute(
+            select(Workout.date, func.count(Workout.id))
+            .where(Workout.user_id == user.id, Workout.date >= date_from, Workout.date <= date_to)
+            .group_by(Workout.date)
+        ).all()
+    }
+
+
+def volume_stats(
+    db: Session, user: User, group_by: GroupBy, periods: int, date_to: date
+) -> VolumeStatsOut:
+    starts = period_starts(group_by, periods, date_to)
+    first = starts[0]
 
     volume: dict[date, Decimal] = defaultdict(Decimal)
-    for row in _daily_groups(db, user, first_week, date_to):
-        volume[week_start(row.day)] += row.volume
+    for row in _daily_groups(db, user, first, date_to):
+        volume[_period_of(group_by, row.day)] += row.volume
+
+    # Uma consulta cobre os períodos, o mês corrente e a janela da sequência.
+    lookback = min(first, month_start(date_to), date_to - timedelta(days=MAX_STREAK_DAYS))
+    per_day = _workouts_per_day(db, user, lookback, date_to)
 
     workouts: dict[date, int] = defaultdict(int)
-    for day, count in db.execute(
-        select(Workout.date, func.count(Workout.id))
-        .where(Workout.user_id == user.id, Workout.date >= first_week, Workout.date <= date_to)
-        .group_by(Workout.date)
-    ).all():
-        workouts[week_start(day)] += count
+    for day, count in per_day.items():
+        if day >= first:
+            workouts[_period_of(group_by, day)] += count
 
-    items = [
-        WeekVolumeOut(
-            week_start=start,
-            volume=_as_float(volume[start]),
-            workouts=workouts[start],
-        )
-        for start in (first_week + timedelta(weeks=i) for i in range(weeks))
-    ]
     return VolumeStatsOut(
-        weeks=items,
+        group_by=group_by,
+        periods=[
+            PeriodVolumeOut(
+                period_start=start,
+                volume=_as_float(volume[start]),
+                workouts=workouts[start],
+            )
+            for start in starts
+        ],
         total_volume=_as_float(sum(volume.values(), Decimal(0))),
         total_workouts=sum(workouts.values()),
+        workouts_this_month=sum(
+            count for day, count in per_day.items() if day >= month_start(date_to)
+        ),
+        streak_days=streak_days(set(per_day), date_to),
     )
 
 

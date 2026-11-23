@@ -1,4 +1,4 @@
-// Gráfico de barras do volume semanal (RF-42), com fl_chart.
+// Gráfico de barras do volume por semana ou por mês (RF-42), com fl_chart.
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -6,19 +6,29 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/stats_model.dart';
 
-class WeeklyVolumeChart extends StatelessWidget {
-  const WeeklyVolumeChart({super.key, required this.weeks});
+const _months = [
+  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', //
+  'jul', 'ago', 'set', 'out', 'nov', 'dez',
+];
 
-  final List<WeekVolume> weeks;
+/// "16/11" para semana, "nov" para mês.
+String periodLabel(DateTime start, StatsScale scale) =>
+    scale == StatsScale.month
+        ? _months[start.month - 1]
+        : '${start.day.toString().padLeft(2, '0')}/'
+            '${start.month.toString().padLeft(2, '0')}';
 
-  static String _label(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+class VolumeChart extends StatelessWidget {
+  const VolumeChart({super.key, required this.stats});
+
+  final VolumeStats stats;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final max = weeks.fold<double>(0, (m, w) => w.volume > m ? w.volume : m);
+    final periods = stats.periods;
+    final max = periods.fold<double>(0, (m, p) => p.volume > m ? p.volume : m);
     final top = max <= 0 ? 1.0 : max * 1.15;
 
     return SizedBox(
@@ -45,13 +55,13 @@ class WeeklyVolumeChart extends StatelessWidget {
                 reservedSize: 24,
                 getTitlesWidget: (value, meta) {
                   final i = value.toInt();
-                  if (i < 0 || i >= weeks.length) {
+                  if (i < 0 || i >= periods.length) {
                     return const SizedBox.shrink();
                   }
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
-                      _label(weeks[i].weekStart),
+                      periodLabel(periods[i].periodStart, stats.scale),
                       style: theme.textTheme.labelSmall
                           ?.copyWith(letterSpacing: 0, fontSize: 10),
                     ),
@@ -65,20 +75,20 @@ class WeeklyVolumeChart extends StatelessWidget {
               getTooltipColor: (_) => scheme.inverseSurface,
               getTooltipItem: (group, _, rod, __) => BarTooltipItem(
                 '${formatKg(rod.toY)}\n'
-                '${weeks[group.x].workouts} treino(s)',
+                '${periods[group.x].workouts} treino(s)',
                 TextStyle(color: scheme.onInverseSurface, fontSize: 12),
               ),
             ),
           ),
           barGroups: [
-            for (var i = 0; i < weeks.length; i++)
+            for (var i = 0; i < periods.length; i++)
               BarChartGroupData(
                 x: i,
                 barRods: [
                   BarChartRodData(
-                    toY: weeks[i].volume,
-                    width: 18,
-                    color: i == weeks.length - 1
+                    toY: periods[i].volume,
+                    width: stats.scale == StatsScale.month ? 26 : 18,
+                    color: i == periods.length - 1
                         ? scheme.primary
                         : scheme.primary.withValues(alpha: 0.45),
                     borderRadius: const BorderRadius.vertical(

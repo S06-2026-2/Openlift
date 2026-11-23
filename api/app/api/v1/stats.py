@@ -2,7 +2,7 @@
 app/services/stats_service.py. Todas exigem login e só agregam os treinos do
 próprio usuário.
 
-GET /stats/volume         — volume semanal das últimas N semanas
+GET /stats/volume         — volume semanal ou mensal, treinos no mês e sequência
 GET /stats/muscle-groups  — volume e frequência por grupo muscular
 GET /stats/heatmap        — matriz data × grupo muscular × volume
 """
@@ -14,7 +14,7 @@ from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUser, DbSession
 from app.api.responses import error_responses
-from app.domain.schemas.stats import HeatmapOut, MuscleGroupStatsOut, VolumeStatsOut
+from app.domain.schemas.stats import GroupBy, HeatmapOut, MuscleGroupStatsOut, VolumeStatsOut
 from app.services import stats_service
 
 router = APIRouter()
@@ -34,19 +34,22 @@ DateTo = Annotated[
 @router.get(
     "/volume",
     response_model=VolumeStatsOut,
-    summary="Volume semanal",
+    summary="Volume semanal ou mensal",
     description="Volume (Σ carga × repetições, sem aquecimento — RN-03) e número de "
-    "treinos de cada semana ISO, da mais antiga para a mais nova. Semanas sem treino "
-    "vêm zeradas. A última semana é a que contém `date_to`.",
+    "treinos de cada semana ISO (`group_by=week`) ou mês (`group_by=month`), do mais "
+    "antigo para o mais novo. Períodos sem treino vêm zerados; o último é o que contém "
+    "`date_to`. Também traz os treinos do mês de `date_to` e a sequência de dias seguidos "
+    "com treino (streak), que continua valendo se ainda não houve treino em `date_to`.",
     responses=error_responses({401: "Não autenticado"}),
 )
 def get_volume(
     db: DbSession,
     user: CurrentUser,
-    weeks: Annotated[int, Query(ge=1, le=52, description="Quantas semanas")] = 12,
+    group_by: Annotated[GroupBy, Query(description="`week` (semana ISO) ou `month`")] = "week",
+    periods: Annotated[int, Query(ge=1, le=52, description="Quantas semanas ou meses")] = 12,
     date_to: DateTo = None,
 ) -> VolumeStatsOut:
-    return stats_service.volume_by_week(db, user, weeks, date_to or date.today())
+    return stats_service.volume_stats(db, user, group_by, periods, date_to or date.today())
 
 
 @router.get(

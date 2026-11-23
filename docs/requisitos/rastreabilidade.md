@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade
 
-Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09); RF-05, RF-33, RF-41, RF-42, RF-54, RN-03 e RNF-12 em 19/11/2026 (dashboard e rede social, ADR-0012). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
+Liga cada requisito ao que foi entregue: issue, PR, código e teste. **Atualizada em 17/10/2026**, fim da Sprint 1; linhas RF-02, RF-03, RF-04 e RNF-01 revistas em 27/10/2026 (FE-04); RF-20 a RF-25, RNF-12, RN-01 e RN-08 em 28/10/2026 (FE-05); RF-24, RF-51 e RNF-02 em 28/10/2026 (FE-06); RF-30 em 17/11/2026 (NOSTR-04); RF-31 e RNF-05 em 17/11/2026 (FE-07); RF-32 em 17/11/2026 (FE-08); RF-12 e RF-14 em 17/11/2026 (FE-09); RF-05, RF-33, RF-41, RF-42, RF-54, RN-03 e RNF-12 em 19/11/2026 (dashboard e rede social, ADR-0012); RF-40, RF-42, RF-43, RF-53, RNF-03 e RNF-06 em 22/11/2026 (pendências da Sprint 4). Todo PR que entrega ou avança um requisito atualiza a linha dele (ver [`README.md`](README.md)).
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem sprint). Sprint "S2" = Sprint 2, e assim por diante. A sprint planejada segue as entregas do [`CONTEXTO.md` §3](../CONTEXTO.md#3-calendário--datas-inegociáveis).
 
@@ -8,11 +8,11 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ planejado · 💤 backlog (S/C sem spr
 
 | Tipo | Total | ✅ | 🟡 | ⬜ | 💤 |
 |---|---|---|---|---|---|
-| RF | 40 | 19 | 7 | 7 | 7 |
-| RNF | 14 | 3 | 7 | 4 | 0 |
+| RF | 40 | 23 | 6 | 4 | 7 |
+| RNF | 14 | 5 | 7 | 2 | 0 |
 | RN | 9 | 4 | 1 | 3 | 1 |
 
-Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md), e os da Sprint 3 em [`docs/qa/sprint-3.md`](../qa/sprint-3.md).
+Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a 4. Os critérios de aceite da Sprint 2 estão em [`docs/qa/sprint-2.md`](../qa/sprint-2.md), os da Sprint 3 em [`docs/qa/sprint-3.md`](../qa/sprint-3.md) e os da Sprint 4 em [`docs/qa/sprint-4.md`](../qa/sprint-4.md).
 
 ## Funcionais
 
@@ -45,14 +45,14 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 | RF-33 | S | 🟡 | `feat/fe-perfil-social` · `feat/fe-posts` (ADR-0012) | Página de perfil por `@nome`: foto, bio, nome verificado, Seguir, grade de fotos (`kind 20`) e treinos publicados (`profile_screens.dart`). Faltam as estatísticas públicas | `app/test/features/social/profile_test.dart`, `posts_test.dart` |
 | RF-34 | S | ⬜ S4 | — | Tabela `rankings` (BE-03 #44) | — |
 | RF-35 | C | 💤 | — | — | — |
-| RF-40 | M | ⬜ S4 | — | Tela Início com espaço reservado (FE-04 #51) | — |
+| RF-40 | M | ✅ | `feat/be-stats` · `feat/sprint4-pendencias` (BE-11, FE-10) | Cards do Início: volume da semana com variação, treinos no mês e sequência (streak), de `GET /stats/volume` (`dashboard_overview.dart`, `stats_service.py`) | `api/tests/test_stats.py` (streak na virada de mês e semana), `app/test/features/dashboard/dashboard_test.dart` |
 | RF-41 | M | ✅ | `feat/be-stats` · `feat/fe-dashboard` | Mapa de calor grupo muscular × semana (8 semanas) no Início, com o grupo mais treinado no topo (`volume_heatmap_widget.dart`) | `app/test/features/dashboard/dashboard_test.dart`, `api/tests/test_stats.py` |
-| RF-42 | M | 🟡 | `feat/be-stats` · `feat/fe-dashboard` | Volume semanal em barras (8 semanas) e frequência por grupo muscular (dias treinados em 28 dias) no Início (`weekly_volume_chart.dart`, `muscle_frequency_chart.dart`). Falta a visão mensal | `app/test/features/dashboard/dashboard_test.dart` |
-| RF-43 | S | ⬜ S4 | — | — | — |
+| RF-42 | M | ✅ | `feat/be-stats` · `feat/fe-dashboard` · `feat/sprint4-pendencias` | Volume em barras com seletor Semanas (8) \| Meses (6), de `GET /stats/volume?group_by=week\|month` (`volume_chart.dart`) | `api/tests/test_stats.py`, `app/test/features/dashboard/dashboard_test.dart` |
+| RF-43 | S | ✅ | `feat/be-stats` · `feat/fe-dashboard` (BE-12) | `GET /stats/muscle-groups` com volume, séries e dias treinados por grupo; frequência por grupo e mapa de calor no Início (`muscle_frequency_chart.dart`) | `api/tests/test_stats.py`, `app/test/features/dashboard/dashboard_test.dart` |
 | RF-50 | M | ⬜ S3 | — | — | — |
 | RF-51 | M | 🟡 S2 | FE-06 #85 | O app verifica `id` e assinatura de todo evento lido antes de exibir (`network_workouts_service.dart`); falta a ingestão no backend (RF-50, S3) | `network_workouts_service_test.dart`, `network_feed_test.dart` (evento adulterado) |
 | RF-52 | M | ⬜ S3 | — | — | — |
-| RF-53 | M | ⬜ S3 | — | — | — |
+| RF-53 | M | ✅ | `feat/sprint4-pendencias` (BE-14) | `python -m app.cli replay [--dry-run]`: apaga `likes`/`rankings` e reprojeta os `kind 7` dos relays com a projeção do worker; não apaga nada se nenhum relay responder (`replay_service.py`, `cli.py`, `docs/runbook/replay.md`) | `api/tests/test_replay.py` |
 | RF-54 | M | ✅ | `feat/be-stats` | `GET /stats/volume`, `/stats/muscle-groups` e `/stats/heatmap`, consulta direta ao Postgres sem cache (ADR-0011) (`stats_service.py`) | `api/tests/test_stats.py` |
 | RF-55 | M | ✅ | Sprint de fundação | `/health` (faz `SELECT 1` no banco) e `/version` em `api/app/main.py` | `api/tests/test_main.py` |
 | RF-56 | M | ✅ | BE-02 #24 → #43 · BE-03 #44 · BE-04 #45 | `summary`, `description`, exemplos e `error_responses()` em todas as rotas | `api/tests/test_auth.py` (OpenAPI) |
@@ -65,10 +65,10 @@ Os requisitos **M** que ainda não estão feitos são o trabalho das Sprints 2 a
 |---|---|---|---|---|
 | RNF-01 | 🟡 S2 | OPS-02 #32 → #52 · FE-04 #83 | Gitleaks em todo PR; no app, teste do fluxo completo confere que nenhuma requisição nem `print` contém a chave privada (`nostr_identity_sync_test.dart`) | Teste com `caplog` nos logs do backend (TEST-02 #87) |
 | RNF-02 | 🟡 S2 | FE-06 #85 | No app, evento adulterado é descartado e contado na aba "Da rede" (`network_workouts_service_test.dart`, `network_feed_test.dart`) | O mesmo na ingestão do backend (S3) |
-| RNF-03 | ⬜ | — | — | Rate limiting nos endpoints públicos (login/cadastro) |
+| RNF-03 | ✅ | `feat/sprint4-pendencias` (OPS-05) | Limite por IP em `/auth` (10/min) e em `/social`, `/profiles`, `/media` (120/min), 429 `rate_limited` com `Retry-After` (`core/rate_limit.py`, `api/tests/test_rate_limit.py`) | — |
 | RNF-04 | 🟡 | FE-03 #30 → #41 | Série registrada só em estado local, sem rede até salvar | Teste de widget com timing |
 | RNF-05 | ✅ | FE-07 #112 | 200 eventos do feed renderizados em 284 ms no `flutter test` (teste "RNF-05" em `feed_test.dart`), com `ListView.builder` | Repetir a medição num aparelho real antes da Demo 4 |
-| RNF-06 | ⬜ S3 | — | — | Comando de replay (RF-53) + teste |
+| RNF-06 | ✅ | `feat/sprint4-pendencias` (BE-14) | Replay em 6,1 s com 10 treinos e três relays públicos (22/11/2026, `docs/runbook/replay.md`) | Repetir a medição com o seed da demo |
 | RNF-07 | 🟡 | CI (`backend-ci.yml`) | `pytest --cov` no CI, informativo até 29/10 (ADR-0010) | Gate de 60% a partir da Sprint 3 |
 | RNF-08 | ✅ | CI · OPS-03 #33 → #53 | `ruff`, `black`, `mypy` e `flutter analyze` no CI; pre-commit local | — |
 | RNF-09 | ✅ | OPS-01 #31 | Branch protection: PR com 1 aprovação e checks obrigatórios | — |

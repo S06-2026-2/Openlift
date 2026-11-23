@@ -1,5 +1,6 @@
-// Dashboard (RF-41, RF-42): leitura de /stats (RF-54), matriz do mapa de
-// calor por semana e a seção "Visão geral" do Início.
+// Dashboard (RF-40 a RF-43): leitura de /stats (RF-54), mapa de calor por
+// semana e por mês e a seção "Visão geral" do Início, com treinos no mês,
+// sequência e os seletores semana/mês.
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ import '../../helpers/fake_http_adapter.dart';
 import '../../helpers/fake_stats_repository.dart';
 
 Map<String, Object> _heatmapJson() => {
-      'date_from': '2026-11-02',
+      'date_from': '2026-09-01',
       'date_to': '2026-11-19',
       'muscle_groups': [
         {'id': 1, 'name': 'Costas'},
@@ -28,6 +29,12 @@ Map<String, Object> _heatmapJson() => {
         {'id': 3, 'name': 'Quadríceps'},
       ],
       'cells': [
+        {
+          'date': '2026-09-15',
+          'muscle_group_id': 3,
+          'muscle_group': 'Quadríceps',
+          'volume': 5000,
+        },
         {
           'date': '2026-11-03',
           'muscle_group_id': 2,
@@ -49,14 +56,42 @@ Map<String, Object> _heatmapJson() => {
       ],
     };
 
-VolumeStats _volume() => VolumeStats(
-      weeks: [
-        WeekVolume(weekStart: DateTime(2026, 11, 9), volume: 2000, workouts: 2),
-        WeekVolume(
-            weekStart: DateTime(2026, 11, 16), volume: 2500, workouts: 3),
+VolumeStats _weekly() => VolumeStats(
+      scale: StatsScale.week,
+      periods: [
+        PeriodVolume(
+          periodStart: DateTime(2026, 11, 9),
+          volume: 2000,
+          workouts: 2,
+        ),
+        PeriodVolume(
+          periodStart: DateTime(2026, 11, 16),
+          volume: 2500,
+          workouts: 3,
+        ),
       ],
       totalVolume: 4500,
       totalWorkouts: 5,
+      workoutsThisMonth: 6,
+      streakDays: 3,
+    );
+
+VolumeStats _monthly() => VolumeStats(
+      scale: StatsScale.month,
+      periods: [
+        PeriodVolume(
+          periodStart: DateTime(2026, 10),
+          volume: 9000,
+          workouts: 9,
+        ),
+        PeriodVolume(
+          periodStart: DateTime(2026, 11),
+          volume: 7000,
+          workouts: 6,
+        ),
+      ],
+      totalVolume: 16000,
+      totalWorkouts: 15,
     );
 
 const _groups = [
@@ -67,19 +102,54 @@ const _groups = [
 
 void main() {
   group('HeatmapData', () {
-    test('soma o volume por grupo e semana ISO', () {
-      final heatmap = HeatmapData.fromJson(_heatmapJson());
+    final heatmap = HeatmapData.fromJson(_heatmapJson());
 
-      expect(heatmap.weekStarts, [
+    test('colunas: últimas N semanas ou meses, sem passar do período', () {
+      expect(heatmap.columns(StatsScale.week, 3), [
         DateTime(2026, 11, 2),
         DateTime(2026, 11, 9),
         DateTime(2026, 11, 16),
       ]);
-      final rows = heatmap.weeklyRows();
+      expect(heatmap.columns(StatsScale.month, 6), [
+        DateTime(2026, 9),
+        DateTime(2026, 10),
+        DateTime(2026, 11),
+      ]);
+    });
+
+    test('soma o volume por grupo e semana ISO', () {
+      final columns = heatmap.columns(StatsScale.week, 3);
+      final rows = heatmap.rows(StatsScale.week, columns);
+
       expect(rows.map((r) => r.name), ['Peito', 'Costas', 'Quadríceps']);
-      expect(rows[0].weekly, [1500.5, 0, 0]);
-      expect(rows[1].weekly, [0, 0, 800]);
-      expect(rows[2].weekly, [0, 0, 0]);
+      expect(rows[0].values, [1500.5, 0, 0]);
+      expect(rows[1].values, [0, 0, 800]);
+      // O treino de setembro fica fora das 3 semanas.
+      expect(rows[2].values, [0, 0, 0]);
+    });
+
+    test('soma o volume por grupo e mês', () {
+      final columns = heatmap.columns(StatsScale.month, 3);
+      final rows = heatmap.rows(StatsScale.month, columns);
+
+      expect(rows.map((r) => r.name), ['Quadríceps', 'Peito', 'Costas']);
+      expect(rows[0].values, [5000, 0, 0]);
+      expect(rows[1].values, [0, 0, 1500.5]);
+      expect(rows[2].values, [0, 0, 800]);
+    });
+
+    test('meses atravessam a virada do ano', () {
+      final data = HeatmapData(
+        from: DateTime(2026, 11),
+        to: DateTime(2027, 1, 10),
+        groups: const {},
+        cells: const [],
+      );
+      expect(data.columns(StatsScale.month, 6), [
+        DateTime(2026, 11),
+        DateTime(2026, 12),
+        DateTime(2027, 1),
+      ]);
     });
 
     test('weekStartOf volta para a segunda-feira', () {
@@ -106,7 +176,8 @@ void main() {
   group('DashboardData', () {
     test('músculo mais treinado é o primeiro com volume', () {
       final data = DashboardData(
-        volume: _volume(),
+        weekly: _weekly(),
+        monthly: _monthly(),
         muscleGroups: _groups,
         heatmap: HeatmapData.fromJson(_heatmapJson()),
       );
@@ -116,7 +187,8 @@ void main() {
 
     test('sem volume não há músculo mais treinado', () {
       final data = DashboardData(
-        volume: const VolumeStats(weeks: [], totalVolume: 0, totalWorkouts: 0),
+        weekly: const VolumeStats.empty(),
+        monthly: const VolumeStats.empty(StatsScale.month),
         muscleGroups: const [
           MuscleGroupStats(
               id: 1, name: 'Peito', volume: 0, sets: 0, sessions: 0),
@@ -148,25 +220,40 @@ void main() {
 
     tearDown(() => client.dispose());
 
-    test('volume manda semanas e a data local', () async {
+    test('volume manda agrupamento, períodos e a data local', () async {
       build((_) => jsonResponse({
-            'weeks': [
-              {'week_start': '2026-11-16', 'volume': '2500.00', 'workouts': 3},
+            'group_by': 'month',
+            'periods': [
+              {
+                'period_start': '2026-11-01',
+                'volume': '2500.00',
+                'workouts': 3
+              },
             ],
             'total_volume': 2500,
             'total_workouts': 3,
+            'workouts_this_month': 3,
+            'streak_days': 2,
           }));
 
       final volume = await repository.getVolume(
         until: DateTime(2026, 11, 19),
-        weeks: 8,
+        scale: StatsScale.month,
+        periods: 6,
       );
 
       final uri = adapter.requests.single.uri;
       expect(uri.path, '/api/v1/stats/volume');
-      expect(uri.queryParameters, {'weeks': '8', 'date_to': '2026-11-19'});
-      expect(volume.weeks.single.volume, 2500);
-      expect(volume.currentWeek?.workouts, 3);
+      expect(uri.queryParameters, {
+        'group_by': 'month',
+        'periods': '6',
+        'date_to': '2026-11-19',
+      });
+      expect(volume.scale, StatsScale.month);
+      expect(volume.periods.single.volume, 2500);
+      expect(volume.current?.workouts, 3);
+      expect(volume.workoutsThisMonth, 3);
+      expect(volume.streakDays, 2);
     });
 
     test('grupos musculares e heatmap usam date_from e date_to', () async {
@@ -187,7 +274,7 @@ void main() {
         to: DateTime(2026, 11, 19),
       );
       final heatmap = await repository.getHeatmap(
-        from: DateTime(2026, 11, 2),
+        from: DateTime(2026, 6),
         to: DateTime(2026, 11, 19),
       );
 
@@ -196,7 +283,7 @@ void main() {
         'date_to': '2026-11-19',
       });
       expect(groups.single.sessions, 4);
-      expect(heatmap.cells, hasLength(3));
+      expect(heatmap.cells, hasLength(4));
     });
 
     test('erro da API vira ApiException', () async {
@@ -223,7 +310,7 @@ void main() {
 
   group('Início', () {
     Future<void> pump(WidgetTester tester, FakeStatsRepository stats) async {
-      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.physicalSize = const Size(800, 2800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
@@ -242,15 +329,23 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('pede as janelas de 8 semanas e 28 dias até hoje',
+    FakeStatsRepository full() => FakeStatsRepository(
+          volume: _weekly(),
+          monthly: _monthly(),
+          muscleGroups: _groups,
+          heatmap: HeatmapData.fromJson(_heatmapJson()),
+        );
+
+    testWidgets('pede semanas, meses, 28 dias e 6 meses de mapa de calor',
         (tester) async {
       final stats = FakeStatsRepository();
       await pump(tester, stats);
 
       expect(stats.calls, [
-        'volume weeks=8 until=2026-11-19T00:00:00.000',
+        'volume week periods=8 until=2026-11-19T00:00:00.000',
+        'volume month periods=6 until=2026-11-19T00:00:00.000',
         'groups from=2026-10-23T00:00:00.000 to=2026-11-19T00:00:00.000',
-        'heatmap from=2026-09-28T00:00:00.000 to=2026-11-19T00:00:00.000',
+        'heatmap from=2026-06-01T00:00:00.000 to=2026-11-19T00:00:00.000',
       ]);
     });
 
@@ -264,34 +359,82 @@ void main() {
       expect(find.text('Volume semanal'), findsNothing);
     });
 
-    testWidgets('mostra resumo, volume, mapa de calor e frequência',
+    testWidgets('mostra os 4 cards, volume, mapa de calor e frequência',
         (tester) async {
-      await pump(
-        tester,
-        FakeStatsRepository(
-          volume: _volume(),
-          muscleGroups: _groups,
-          heatmap: HeatmapData.fromJson(_heatmapJson()),
-        ),
-      );
+      await pump(tester, full());
 
       expect(find.text('Volume da semana'), findsOneWidget);
       expect(find.text('2.500 kg'), findsOneWidget);
       expect(find.text('+25% vs. semana passada'), findsOneWidget);
+      expect(find.text('Treinos no mês'), findsOneWidget);
+      expect(find.text('6'), findsOneWidget);
+      expect(find.text('Sequência'), findsOneWidget);
+      expect(find.text('3 dias'), findsOneWidget);
       expect(find.text('Músculo mais treinado'), findsOneWidget);
       expect(find.text('Volume semanal'), findsOneWidget);
       expect(find.text('Mapa de calor por grupo muscular'), findsOneWidget);
       expect(find.text('Frequência por grupo muscular'), findsOneWidget);
       expect(find.text('4 dias'), findsOneWidget);
       expect(find.text('1 dia'), findsOneWidget);
-      // Peito tem o maior volume no mapa: célula mais quente na 1ª semana.
-      final hottest =
-          tester.widget<Container>(find.byKey(const ValueKey('heat-2-0')));
+    });
+
+    testWidgets('volume troca entre semanal e mensal', (tester) async {
+      await pump(tester, full());
+
+      await tester.tap(find.descendant(
+        of: find.byKey(const ValueKey('volume-scale')),
+        matching: find.text('Meses'),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Volume mensal'), findsOneWidget);
+      expect(find.text('Volume semanal'), findsNothing);
+      expect(find.text('nov'), findsWidgets);
+    });
+
+    testWidgets('mapa de calor troca entre semanas e meses', (tester) async {
+      await pump(tester, full());
+
+      // Por semana (8 semanas): Peito é o mais quente na semana de 02/11.
+      expect(find.textContaining('últimas 8 semanas'), findsOneWidget);
+      final weekCell = tester.widget<Container>(
+        find.byKey(const ValueKey('heat-2-5')),
+      );
       expect(
-        (hottest.decoration! as BoxDecoration).color,
+        (weekCell.decoration! as BoxDecoration).color,
         AppTheme.heatScale.last,
       );
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsWidgets);
+
+      await tester.tap(find.descendant(
+        of: find.byKey(const ValueKey('heatmap-scale')),
+        matching: find.text('Meses'),
+      ));
+      await tester.pumpAndSettle();
+
+      // Por mês (setembro a novembro): Quadríceps em setembro é o máximo.
+      expect(find.textContaining('últimos 3 meses'), findsOneWidget);
+      final monthCell = tester.widget<Container>(
+        find.byKey(const ValueKey('heat-3-0')),
+      );
+      expect(
+        (monthCell.decoration! as BoxDecoration).color,
+        AppTheme.heatScale.last,
+      );
+    });
+
+    testWidgets('sequência zerada convida a treinar hoje', (tester) async {
+      final stats = full()
+        ..volume = VolumeStats(
+          scale: StatsScale.week,
+          periods: _weekly().periods,
+          totalVolume: 4500,
+          totalWorkouts: 5,
+        );
+      await pump(tester, stats);
+
+      // "0 dias" também aparece na frequência (Quadríceps).
+      expect(find.text('0 dias'), findsNWidgets(2));
+      expect(find.text('Treine hoje para começar'), findsOneWidget);
     });
 
     testWidgets('falha mostra a mensagem e tenta de novo', (tester) async {

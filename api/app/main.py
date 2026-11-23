@@ -81,9 +81,6 @@ def nostr_json(
     return {"names": profile_service.nip05_names(db, name)}
 
 
-# TODO(Sprint 4): middleware de rate limiting (slowapi)
-
-
 @app.get(
     "/media/{filename}",
     tags=["media"],
