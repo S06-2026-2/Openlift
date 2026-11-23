@@ -207,7 +207,19 @@ def generate_report(
                     request,
                     timeout=REQUEST_TIMEOUT,
                 ) as response:
-                    result = json.load(response)
+                    try:
+                        result = json.load(response)
+                    except json.JSONDecodeError:
+                        failures.append(
+                            f"{model}: invalid JSON response"
+                        )
+
+                        print(
+                            f"Gemini {model}: invalid JSON response. "
+                            "Trying next model.",
+                            flush=True,
+                        )
+                        break
 
                 try:
                     report = extract_report(result)
