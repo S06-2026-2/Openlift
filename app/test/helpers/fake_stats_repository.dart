@@ -8,11 +8,16 @@ import 'package:openlift/features/dashboard/domain/stats_model.dart';
 class FakeStatsRepository implements StatsRepository {
   FakeStatsRepository({
     this.volume,
+    this.monthly,
     this.muscleGroups = const [],
     this.heatmap,
   });
 
+  /// Volume por semana (e o resumo: treinos no mês, sequência).
   VolumeStats? volume;
+
+  /// Volume por mês.
+  VolumeStats? monthly;
   List<MuscleGroupStats> muscleGroups;
   HeatmapData? heatmap;
 
@@ -30,12 +35,17 @@ class FakeStatsRepository implements StatsRepository {
   }
 
   @override
-  Future<VolumeStats> getVolume({required DateTime until, int weeks = 8}) =>
+  Future<VolumeStats> getVolume({
+    required DateTime until,
+    StatsScale scale = StatsScale.week,
+    int periods = 8,
+  }) =>
       _answer(
-        'volume weeks=$weeks until=${until.toIso8601String()}',
-        () =>
-            volume ??
-            const VolumeStats(weeks: [], totalVolume: 0, totalWorkouts: 0),
+        'volume ${scale.name} periods=$periods '
+        'until=${until.toIso8601String()}',
+        () => scale == StatsScale.month
+            ? monthly ?? const VolumeStats.empty(StatsScale.month)
+            : volume ?? const VolumeStats.empty(),
       );
 
   @override
