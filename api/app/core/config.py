@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     nostr_relay_max_retries: int = 3
     # BE-09 — intervalo do worker de sincronização (ADR-0011)
     nostr_sync_interval_seconds: int = Field(default=300, ge=10)
+    # OPS-08 — nível dos logs JSON da API e do worker
+    log_level: str = Field(default="INFO", pattern=r"(?i)^(DEBUG|INFO|WARNING|ERROR)$")
 
     # ADR-0012 — URL pública da API: domínio do NIP-05 e base das URLs de foto
     public_base_url: str = "http://localhost:8000"

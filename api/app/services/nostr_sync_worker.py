@@ -36,6 +36,7 @@ from app.core.nostr import KIND_REACTION, KIND_WORKOUT_RECORD
 from app.domain.models.like import Like
 from app.domain.models.shared_event import SharedEvent
 from app.infra.nostr.relay_client import Event, Filter, RelayClient
+from app.services.worker_status import record_heartbeat
 
 logger = logging.getLogger("openlift.worker")
 
@@ -141,7 +142,19 @@ def run_sync_cycle() -> SyncResult | None:
 
     try:
         with SessionLocal() as db:
-            return asyncio.run(sync_reactions(db, RelayClient.from_settings()))
-    except Exception:
+            result = asyncio.run(sync_reactions(db, RelayClient.from_settings()))
+            record_heartbeat(db)
+            return result
+    except Exception as exc:
         logger.exception("Ciclo de sincronização falhou")
+        _record_failure(SessionLocal, type(exc).__name__)
         return None
+
+
+def _record_failure(session_factory: Any, error: str) -> None:
+    """Registra a falha no heartbeat, se o banco aceitar (pode ser ele o problema)."""
+    try:
+        with session_factory() as db:
+            record_heartbeat(db, error=error)
+    except Exception:
+        logger.warning("Não foi possível registrar o heartbeat do worker")

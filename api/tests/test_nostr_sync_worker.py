@@ -17,6 +17,7 @@ from app.core.config import Settings
 from app.domain.models.like import Like
 from app.domain.models.shared_event import SharedEvent
 from app.domain.models.user import User
+from app.domain.models.worker_heartbeat import WorkerHeartbeat
 from app.domain.models.workout import Workout
 from app.infra.nostr.relay_client import RelayClient
 from app.services import nostr_sync_worker
@@ -235,6 +236,31 @@ def test_run_sync_cycle_usa_sessao_e_relays_da_configuracao(
 
     result = nostr_sync_worker.run_sync_cycle()
     assert result is not None and result.new_likes == 1
+    # OPS-08: o ciclo deixa o heartbeat que o /health lê.
+    beat = db_session.get(WorkerHeartbeat, "nostr-sync")
+    assert beat is not None and beat.last_success_at is not None and beat.last_error is None
+
+
+def test_ciclo_que_falha_registra_o_erro_no_heartbeat(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = {"n": 0}
+
+    class _Session:
+        def __enter__(self) -> Session:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise ConnectionError("relay e banco instáveis")
+            return db_session
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("app.infra.db.session.SessionLocal", _Session)
+    assert nostr_sync_worker.run_sync_cycle() is None
+    beat = db_session.get(WorkerHeartbeat, "nostr-sync")
+    assert beat is not None and beat.last_error == "ConnectionError"
+    assert beat.last_success_at is None
 
 
 def test_run_sync_cycle_nao_propaga_erro(monkeypatch: pytest.MonkeyPatch) -> None:

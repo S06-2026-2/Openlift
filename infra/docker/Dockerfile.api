@@ -11,7 +11,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY api/ .
 
+# OPS-07: migrations + seed antes do comando (RUN_MIGRATIONS=false pula).
+# O sed tira CR caso o arquivo tenha vindo com CRLF de um checkout no Windows.
+COPY infra/docker/entrypoint.sh /usr/local/bin/openlift-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/openlift-entrypoint \
+    && chmod +x /usr/local/bin/openlift-entrypoint
+
 EXPOSE 8000
+ENTRYPOINT ["openlift-entrypoint"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # TODO(Sprint 6): build multi-stage para reduzir o tamanho da imagem final

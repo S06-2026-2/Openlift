@@ -1,6 +1,7 @@
 """Ponto de entrada da API FastAPI.
 
-- /health (checa o Postgres) e /version;
+- /health (banco + worker de sincronização) e /version;
+- logs estruturados em JSON e log de cada requisição (OPS-08, RNF-14);
 - router da v1 em /api/v1 (auth; demais domínios entram nos próximos BEs);
 - CORS para o app Flutter web (origem configurável via CORS_ORIGIN_REGEX);
 - erros sempre no formato {"detail": "...", "code": "..."} (app/core/errors.py).
@@ -12,14 +13,18 @@ from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.deps import DbSession
 from app.api.v1.media import MediaDir
 from app.api.v1.router import api_router
 from app.core.config import get_settings
-from app.core.database import engine
 from app.core.errors import ApiError, register_exception_handlers
-from app.services import media_service, profile_service
+from app.core.logging import configure_logging
+from app.core.middleware import RequestLoggingMiddleware
+from app.services import media_service, profile_service, worker_status
+
+configure_logging(get_settings().log_level)
 
 app = FastAPI(
     title="OpenLift API",
@@ -39,6 +44,7 @@ app = FastAPI(
     ],
 )
 
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=get_settings().cors_origin_regex,
@@ -49,11 +55,24 @@ app.add_middleware(
 register_exception_handlers(app)
 
 
-@app.get("/health", tags=["system"], summary="Saúde da API (checa o banco)")
-def health() -> dict:
-    with engine.connect() as connection:
-        connection.execute(text("SELECT 1"))
-    return {"status": "ok"}
+@app.get(
+    "/health",
+    tags=["system"],
+    summary="Saúde da API: banco e worker",
+    description="`status` e `database` dizem se a API consegue falar com o Postgres "
+    "(senão, 503 `database_unavailable`). `worker` mostra o último ciclo do worker de "
+    "sincronização NOSTR: `ok` (sucesso nos últimos 3 intervalos), `stale` (rodou, mas "
+    "sem sucesso recente) ou `unknown` (nunca rodou neste ambiente). O worker parado "
+    "não derruba o `/health`: a API continua servindo.",
+    responses={503: {"description": "Banco de dados indisponível"}},
+)
+def health(db: DbSession) -> dict:
+    try:
+        db.execute(text("SELECT 1"))
+        worker = worker_status.worker_status(db, get_settings().nostr_sync_interval_seconds)
+    except SQLAlchemyError as exc:
+        raise ApiError(503, "Banco de dados indisponível.", "database_unavailable") from exc
+    return {"status": "ok", "database": "ok", "worker": worker}
 
 
 @app.get("/version", tags=["system"], summary="Versão e ambiente")
