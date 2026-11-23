@@ -71,6 +71,16 @@ TestSessionLocal = sessionmaker(
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limit() -> Generator[None, None, None]:
+    """Cada teste começa com os contadores de rate limiting zerados."""
+    from app.core import rate_limit
+
+    rate_limit.reset()
+    yield
+    rate_limit.reset()
+
+
 @pytest.fixture()
 def db_session() -> Generator[Session, None, None]:
     """Cria todas as tabelas, abre uma sessão limpa e derruba tudo ao final."""

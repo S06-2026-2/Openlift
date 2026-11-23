@@ -78,6 +78,7 @@ Veja `.env.example`. No Docker elas já vêm do `docker-compose.yml`; o `.env` s
 | `NOSTR_RELAY_TIMEOUT_SECONDS` / `NOSTR_RELAY_MAX_RETRIES` | Espera máxima por mensagem do relay (padrão 10 s) e novas tentativas com backoff (padrão 3) |
 | `PUBLIC_BASE_URL` | URL pública da API (padrão `http://localhost:8000`): domínio do NIP-05 (`usuario@host`) e base das URLs de foto (ADR-0012) |
 | `MEDIA_DIR` | Pasta das fotos enviadas (padrão `media`, ignorada pelo git). **No staging, monte um volume persistente aqui**, senão as fotos somem a cada deploy (ADR-0012) |
+| `RATE_LIMIT_AUTH` / `RATE_LIMIT_SOCIAL` / `RATE_LIMIT_ENABLED` | Rate limiting por IP (RNF-03): `/auth` (padrão `10/minute`) e `/social`, `/profiles`, `/media` (padrão `120/minute`). Acima disso, 429 `rate_limited` com `Retry-After`. O IP vem do primeiro `X-Forwarded-For` (API atrás de proxy no staging) |
 
 ## Rotas (`/api/v1`)
 
