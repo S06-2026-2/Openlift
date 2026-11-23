@@ -10,6 +10,8 @@
 //
 // ADR-0012: a aba só abre para quem tem perfil (nome de usuário único); sem
 // perfil, mostra o cadastro. Os cards mostram foto e @nome de quem publicou.
+// O feed junta, por data, os treinos e as postagens de foto (`kind 20`) da
+// própria conta e de quem ela segue; o botão "Nova postagem" publica uma.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,14 +23,18 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/page_layout.dart';
 import '../../workouts/presentation/widgets/state_views.dart';
 import '../data/network_workouts_service.dart';
+import '../domain/photo_post.dart';
 import '../domain/profile_model.dart';
+import '../domain/published_workout.dart';
 import 'feed_controller.dart';
 import 'likes_controller.dart';
 import 'network_feed_controller.dart';
+import 'posts_controller.dart';
 import 'profile_controller.dart';
 import 'profile_screens.dart';
 import 'widgets/feed_workout_card.dart';
 import 'widgets/like_button.dart';
+import 'widgets/photo_post_card.dart';
 import 'widgets/profile_avatar.dart';
 
 class FeedScreen extends ConsumerWidget {
@@ -40,6 +46,13 @@ class FeedScreen extends ConsumerWidget {
     final mine = profile.valueOrNull;
 
     return Scaffold(
+      floatingActionButton: mine == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => context.go(AppRoutes.compose),
+              icon: const Icon(Icons.add_a_photo_rounded),
+              label: const Text('Nova postagem'),
+            ),
       appBar: AppBar(
         title: const Text('Social'),
         actions: [
@@ -124,14 +137,24 @@ class _FeedBody extends ConsumerWidget {
 
   void _retry(WidgetRef ref) => ref
     ..invalidate(followingProvider)
-    ..invalidate(feedProvider);
+    ..invalidate(feedProvider)
+    ..invalidate(postsFeedProvider);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(feedProvider);
     // Mantém curtidas e perfis vivos enquanto o feed está na tela.
     ref.watch(likesProvider);
+    ref.watch(postLikesProvider);
     ref.watch(authorProfilesProvider);
+    final posts = ref.watch(postsFeedProvider).valueOrNull ?? const [];
+    ref.listen(postsFeedProvider, (_, next) {
+      final loaded = next.valueOrNull ?? const <PhotoPost>[];
+      ref.read(postLikesProvider.notifier).fetch(loaded);
+      ref
+          .read(authorProfilesProvider.notifier)
+          .load([for (final p in loaded) p.pubkey]);
+    });
     ref.listen(feedProvider, (_, next) {
       final workouts = next.valueOrNull?.workouts ?? const [];
       ref
@@ -152,7 +175,7 @@ class _FeedBody extends ConsumerWidget {
         onRetry: () => _retry(ref),
       ),
       data: (state) {
-        if (!state.followsAnyone) {
+        if (!state.followsAnyone && posts.isEmpty) {
           return EmptyStateView(
             icon: Icons.people_outline_rounded,
             title: 'Você ainda não segue ninguém',
@@ -163,11 +186,14 @@ class _FeedBody extends ConsumerWidget {
           );
         }
         return RefreshIndicator(
-          onRefresh: () => ref.refresh(feedProvider.future).then(
-                (_) {},
-                onError: (Object _) {},
-              ),
-          child: state.workouts.isEmpty
+          onRefresh: () {
+            ref.invalidate(postsFeedProvider);
+            return ref.refresh(feedProvider.future).then(
+                  (_) {},
+                  onError: (Object _) {},
+                );
+          },
+          child: state.workouts.isEmpty && posts.isEmpty
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
@@ -180,7 +206,7 @@ class _FeedBody extends ConsumerWidget {
                     ],
                   ],
                 )
-              : _FeedList(state: state),
+              : _FeedList(state: state, posts: posts),
         );
       },
     );
@@ -222,14 +248,30 @@ class _DiscardedNote extends StatelessWidget {
   }
 }
 
+/// Um item do feed: treino ou postagem de foto.
+class _Entry {
+  const _Entry.workout(PublishedWorkout this.workout) : post = null;
+  const _Entry.post(PhotoPost this.post) : workout = null;
+
+  final PublishedWorkout? workout;
+  final PhotoPost? post;
+
+  int get time => workout?.createdAt ?? post!.createdAt;
+  String get pubkey => workout?.pubkey ?? post!.pubkey;
+}
+
 class _FeedList extends ConsumerWidget {
-  const _FeedList({required this.state});
+  const _FeedList({required this.state, required this.posts});
 
   final FeedState state;
+  final List<PhotoPost> posts;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final workouts = state.workouts;
+    final entries = [
+      for (final w in state.workouts) _Entry.workout(w),
+      for (final p in posts) _Entry.post(p),
+    ]..sort((a, b) => b.time.compareTo(a.time));
     final authors = ref.watch(authorProfilesProvider);
     // Itens: treinos + rodapé (aviso de descartados e/ou "Carregar mais").
     final hasFooter = state.hasMore || state.discarded > 0;
@@ -238,16 +280,23 @@ class _FeedList extends ConsumerWidget {
       builder: (context, constraints) => ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: pagePadding(constraints, bottom: 96),
-        itemCount: workouts.length + (hasFooter ? 1 : 0),
+        itemCount: entries.length + (hasFooter ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index < workouts.length) {
+          if (index < entries.length) {
+            final entry = entries[index];
+            final workout = entry.workout;
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: FeedWorkoutCard(
-                workout: workouts[index],
-                author: authors[workouts[index].pubkey],
-                footer: LikeButton(workout: workouts[index]),
-              ),
+              child: workout != null
+                  ? FeedWorkoutCard(
+                      workout: workout,
+                      author: authors[workout.pubkey],
+                      footer: LikeButton(workout: workout),
+                    )
+                  : PhotoPostCard(
+                      post: entry.post!,
+                      author: authors[entry.pubkey],
+                    ),
             );
           }
           return _FeedFooter(state: state);
